@@ -157,8 +157,8 @@ private:
     /// unique id of the strategy that placed the order
     string strategy_id;
 
-    /// net liquidation value of the trade
-    double nlv;
+    /// net liquidation value of the trade represented as a fixed point floating number
+    long long nlv;
 
     /// how many units in the trade
     double units;

@@ -356,30 +356,7 @@ void Hydra::on_open(){
      // strategies with lazy execution
     for (auto &broker_pair : *this->brokers)
     {   
-        #ifdef ARGUS_STRIP
-        if(this->logging == 1)
-        {
-            this->log(
-            fmt::format("BROKER: {} sending orders...", 
-                    broker_pair.first
-                )
-            );
-        }
-        #endif
-
-        broker_pair.second->send_orders();
-
-        #ifdef ARGUS_STRIP
-        if(this->logging == 1)
-        {
-            this->log(
-            fmt::format("BROKER: {} processing orders...", 
-                    broker_pair.first
-                )
-            );
-        }
-        #endif
-    
+        broker_pair.second->send_orders();    
         broker_pair.second->process_orders();
     }   
 
@@ -391,20 +368,14 @@ void Hydra::on_open(){
     }
 
     #ifdef ARGUS_STRIP
-    if(this->logging == 1)
-    {
-        this->log("evaluating master portfolio...");
-    }
+    if(this->logging == 1){this->log("evaluating master portfolio...");}
     #endif
 
     //evaluate master portfolio at close
     this->master_portfolio->evaluate(true);
 
     #ifdef ARGUS_STRIP
-    if(this->logging == 1)
-    {
-        this->log("master portfolio evaluation complete");
-    }
+    if(this->logging == 1){this->log("master portfolio evaluation complete");}
     #endif
 
 }
@@ -624,7 +595,7 @@ void Hydra::run(long long to, size_t steps){
             strategy->cxx_handler_on_open();    
         };
 
-        // process orders on open
+        // process orders that were placed on open
         this->on_open();
 
         //allow strategies to place orders at close

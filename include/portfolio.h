@@ -133,7 +133,7 @@ public:
 
     /// @brief adjust nlv by amount, allows trades to adjust source portfolio values
     /// @param nlv_adjustment adjustment size
-    void nlv_adjust(double nlv_adjustment) {this->nlv += to_fixed_point(nlv_adjustment);};
+    void nlv_adjust(long long nlv_adjustment) {this->nlv += nlv_adjustment;};
     void cash_adjust(double cash_adjustment) {this->cash += cash_adjustment;};
     void unrealized_adjust(double unrealized_adjustment) {this->unrealized_pl += unrealized_adjustment;};
 

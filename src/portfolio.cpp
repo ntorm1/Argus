@@ -697,7 +697,7 @@ void Portfolio::evaluate(bool on_close)
                 continue;
             }
 
-            auto nlv_new = trade->get_units() * market_price;
+            auto nlv_new = trade->get_units() * to_fixed_point(market_price);
             source_portfolio->nlv_adjust(nlv_new - trade->get_nlv());
             source_position->nlv_adjust(nlv_new - trade->get_nlv());
             
@@ -717,7 +717,7 @@ void Portfolio::evaluate(bool on_close)
         }
 
         position->evaluate(market_price, on_close);
-        this->nlv += to_fixed_point(position->get_nlv());
+        this->nlv += position->get_nlv();
         this->unrealized_pl += position->get_unrealized_pl();
     }
 }
