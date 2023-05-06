@@ -28,17 +28,14 @@ class MovingAverageStrategy:
     
     def on_close(self) -> None:
         cross_dict = self.exchange.get_exchange_feature("FAST_ABOVE_SLOW")
-        for asset_id, cross_value in cross_dict.items():
-            if cross_value == 1:    
-                units = 1
-            elif cross_value == 0: 
-                units = -1
-            self.portfolio1.order_target_size(asset_id, units, "dummy", 
-                                    .01,
-                                    OrderTargetType.DOLLARS,
-                                    OrderExecutionType.EAGER,
-                                    -1)
-
+        allocations = {id : val*100 for id,val in cross_dict.items()}
+        self.portfolio1.order_target_allocations(
+            allocations,
+            "dummy",
+            .01,
+            order_target_type = OrderTargetType.UNITS
+        )
+        
 class SimpleStrategy:
     def __init__(self, hal : Hal) -> None:        
         self.exchange = hal.get_exchange(helpers.test1_exchange_id)
