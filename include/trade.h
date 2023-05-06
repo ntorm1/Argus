@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <gmp.h>
 
 #include "order.h"
 

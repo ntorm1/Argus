@@ -15,10 +15,10 @@ static double constexpr ARGUS_PORTFOLIO_MAX_LEVERAGE  = 2;
 static double constexpr ARGUS_MP_PORTFOLIO_MAX_LEVERAGE = 1.75;
 
 // Number of decimal places for fixed-point representation
-static int constexpr DECIMAL_PLACES = 9;
+static int constexpr DECIMAL_PLACES = 8;
 
 // Scale factor for converting between fixed-point and double values
-static long long constexpr SCALE_FACTOR = 1e9;
+static long long constexpr SCALE_FACTOR = 1e8;
 
 
 // Convert a double value to fixed-point representation

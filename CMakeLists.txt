@@ -21,10 +21,11 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pie -fPIE")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Argus/FastTest)
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -I/opt/homebrew/include")
 project(Argus)
 
 #----external libraries----#
+
 #fmt
 include_directories(external/fmt/include)
 add_subdirectory(external/fmt)
@@ -50,6 +51,13 @@ include_directories(external/pybind11/include)
 
 file(GLOB SRCS src/*.cpp)
 
+find_library(GMP_LIBRARY gmp)
+if (GMP_LIBRARY)
+    message(STATUS "Found GMP library: ${GMP_LIBRARY}")
+else()
+    message(FATAL_ERROR "GMP library not found")
+endif()
+
 # Expose asset module to Python
 pybind11_add_module(FastTest ${SRCS})
-target_link_libraries(FastTest PRIVATE fmt::fmt-header-only)
+target_link_libraries(FastTest PRIVATE fmt::fmt-header-only ${GMP_LIBRARY})

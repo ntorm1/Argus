@@ -168,11 +168,11 @@ def test_backtrader(dfs):
     
     
     cps_bt = candle_count / (et-st)
-    print(f"Backtrader loaded in {lt-st:.6f} seconds")
-    print(f"Backtrader completed in {et-st:.6f} seconds")
-    print(f"Backtrader candles per seconds: {cps_bt:,.2f}")   
-    print(f"Backtrader Final Portfolio Value: {cerebro.broker.getvalue():,.4f}")
-    print(f"Backtrader Initial Portfolio Value: {nlv[1]:,.4f}")
+    #print(f"Backtrader loaded in {lt-st:.6f} seconds")
+    #print(f"Backtrader completed in {et-st:.6f} seconds")
+    #print(f"Backtrader candles per seconds: {cps_bt:,.2f}")   
+    #print(f"Backtrader Final Portfolio Value: {cerebro.broker.getvalue():,.4f}")
+    #print(f"Backtrader Initial Portfolio Value: {nlv[1]:,.4f}")
 
     return nlv, et-st
 
@@ -207,11 +207,11 @@ def test_fasttest(dfs):
     cash = portfolio.get_tracer(PortfolioTracerType.VALUE).get_cash_history()
     
     
-    print(f"FastTest loaded in {lt-st:.6f} seconds")
-    print(f"FastTest completed in {et-st:.6f} seconds")
-    print(f"FastTest candles per seconds: {cps_bt:,.2f}")  
-    print(f"FastTest Final Portfolio Value: {nlv[-1]:,.4f}")
-    print(f"FastTest Initial Portfolio Value: {nlv[1]:,.4f}")
+    #print(f"FastTest loaded in {lt-st:.6f} seconds")
+    #print(f"FastTest completed in {et-st:.6f} seconds")
+    #print(f"FastTest candles per seconds: {cps_bt:,.2f}")  
+    #print(f"FastTest Final Portfolio Value: {nlv[-1]:,.4f}")
+    #print(f"FastTest Initial Portfolio Value: {nlv[1]:,.4f}")
 
     orders = hal.get_order_history()        
     return nlv, cash, et-st, orders 
@@ -221,7 +221,7 @@ def test_fp_error():
     step_count = 203
     
     n_trials = 10
-    counts = [1,10,20,30,60,100,150,200,250,500]
+    counts = [1,10,20,30,60,100,150,200,250,350,500]
     ft_errors = []
     bt_errors = []
     
@@ -267,6 +267,8 @@ def test_fp_error():
     plt.show()
     
 if __name__ == "__main__":
+    test_fp_error()
+    """
     count = 200
     step_count = 3000
     dfs = load_data(count, step_count)
@@ -286,3 +288,4 @@ if __name__ == "__main__":
     ax1.plot(ft_nlv, alpha = .5, label = "FastTest")
     ax1.legend()
     plt.show()
+    """

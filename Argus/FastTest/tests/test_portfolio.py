@@ -435,7 +435,7 @@ class PortfolioTestMethods(unittest.TestCase):
         assert(p2.get_last_price() == 97)
         
         nlv = 100000 + ((100000 * .6)/99)*(97-99) + (-1*(100000 * .4)/101)*(103-101)
-        assert(abs(nlv - portfolio1.get_nlv()) < 1e-8)
+        assert(abs(nlv - portfolio1.get_nlv()) < 1e-6)
                 
         """
         allocations = {helpers.test1_asset_id : -.4, helpers.test2_asset_id : .6}
