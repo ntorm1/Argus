@@ -1,6 +1,7 @@
 import time
 import sys 
 import os
+from decimal import Decimal, getcontext
 from datetime import datetime
 
 import numpy as np
@@ -137,7 +138,7 @@ class BT_MA_Cross_Strategy(bt.Strategy):
                     else:
                         self.sell(data=d, size = 200)
             
-def test_backtrader(dfs):
+def test_backtrader(dfs, log = False):
     candle_count = 0
     for asset_id, df in dfs.items():
         candle_count += len(df)
@@ -168,16 +169,17 @@ def test_backtrader(dfs):
     
     
     cps_bt = candle_count / (et-st)
-    #print(f"Backtrader loaded in {lt-st:.6f} seconds")
-    #print(f"Backtrader completed in {et-st:.6f} seconds")
-    #print(f"Backtrader candles per seconds: {cps_bt:,.2f}")   
-    #print(f"Backtrader Final Portfolio Value: {cerebro.broker.getvalue():,.4f}")
-    #print(f"Backtrader Initial Portfolio Value: {nlv[1]:,.4f}")
+    if log:
+        print(f"Backtrader loaded in {lt-st:.6f} seconds")
+        print(f"Backtrader completed in {et-st:.6f} seconds")
+        print(f"Backtrader candles per seconds: {cps_bt:,.2f}")   
+        print(f"Backtrader Final Portfolio Value: {cerebro.broker.getvalue():,.4f}")
+        print(f"Backtrader Initial Portfolio Value: {nlv[1]:,.4f}")
 
     return nlv, et-st
 
 
-def test_fasttest(dfs):
+def test_fasttest(dfs, log = False):
     candle_count = 0
     
     for asset_id, df in dfs.items():
@@ -206,56 +208,51 @@ def test_fasttest(dfs):
     nlv = portfolio.get_tracer(PortfolioTracerType.VALUE).get_nlv_history()
     cash = portfolio.get_tracer(PortfolioTracerType.VALUE).get_cash_history()
     
-    
-    #print(f"FastTest loaded in {lt-st:.6f} seconds")
-    #print(f"FastTest completed in {et-st:.6f} seconds")
-    #print(f"FastTest candles per seconds: {cps_bt:,.2f}")  
-    #print(f"FastTest Final Portfolio Value: {nlv[-1]:,.4f}")
-    #print(f"FastTest Initial Portfolio Value: {nlv[1]:,.4f}")
+    if log:
+        print(f"FastTest loaded in {lt-st:.6f} seconds")
+        print(f"FastTest completed in {et-st:.6f} seconds")
+        print(f"FastTest candles per seconds: {cps_bt:,.2f}")  
+        print(f"FastTest Final Portfolio Value: {nlv[-1]:,.4f}")
+        print(f"FastTest Initial Portfolio Value: {nlv[1]:,.4f}")
 
     orders = hal.get_order_history()        
     return nlv, cash, et-st, orders 
  
 def test_fp_error():
-    count = 1
     step_count = 203
     
-    n_trials = 10
-    counts = [1,10,20,30,60,100,150,200,250,350,500]
+    n_trials = 5
+    counts = [1,10,20,30,60,100,150,200,250,350,400,500]
     ft_errors = []
     bt_errors = []
     
+    getcontext().prec = 50
     for count in counts:
         print(count)
         ft_error = 0
         bt_error = 0
         for i in range(n_trials):
             dfs = load_data(count, step_count)
-            #print(f"{count * step_count:,} candles loaded\n")
-            #print()
             
             ft_nlv, ft_cash, ft_time, orders = test_fasttest(dfs)
-            #print()
             bt_nlv, bt_time = test_backtrader(dfs)
-            #print()
-
-            #print(f"fastest \033[32m{bt_time / ft_time:.4}x\033[0m faster")
             
             pls = {asset_id  : dfs[asset_id]["Open"].diff().values[2] for asset_id in list(dfs.keys())}
             df_pls = pd.DataFrame(pls.items(), columns = ["asset_id","pl"])
                         
             orders = pd.merge(orders, df_pls, how = "left", on = "asset_id")
-            true_nlv = 100000 + sum(orders["units"] * orders["pl"])
+            orders['pl'] = orders['pl'].apply(lambda x: Decimal(str(x)))
+            orders['units'] = orders['units'].apply(lambda x: Decimal(str(x)))
+            sum_product = (orders['units'] * orders['pl']).sum()
+            
+            true_nlv =  sum_product + Decimal("100000")
 
-            ft_error += (true_nlv - ft_nlv[1])
-            bt_error += (true_nlv - bt_nlv[1])
+            ft_error += (true_nlv - Decimal(ft_nlv[1]))
+            bt_error += (true_nlv - Decimal(bt_nlv[1]))
             
         ft_errors.append((ft_error / n_trials)/ 100000)
         bt_errors.append((bt_error / n_trials)/ 100000)
         
-    #print(f"ft error {true_nlv - ft_nlv[1]}")
-    #print(f"bt error {true_nlv - bt_nlv[1]}")
-
     fig, ax1 = plt.subplots()
     ax1.plot(counts,bt_errors, alpha = .5, label = "Backtrader")
     ax1.plot(counts,ft_errors, alpha = .5, label = "FastTest")
@@ -275,9 +272,9 @@ if __name__ == "__main__":
     print(f"{count * step_count:,} candles loaded\n")
     print()
     
-    ft_nlv, ft_cash, ft_time, orders = test_fasttest(dfs)
+    ft_nlv, ft_cash, ft_time, orders = test_fasttest(dfs, log=True)
     print()
-    bt_nlv, bt_time = test_backtrader(dfs)
+    bt_nlv, bt_time = test_backtrader(dfs,log = True)
     print()
 
     print(f"fastest \033[32m{bt_time / ft_time:.4}x\033[0m faster")

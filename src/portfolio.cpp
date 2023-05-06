@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstdio>
+#include <gmp.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -15,6 +16,7 @@
 #include "position.h"
 #include "pybind11/pytypes.h"
 #include "settings.h"
+
 #include "utils_time.h"
 
 
@@ -43,7 +45,7 @@ Portfolio::Portfolio(
     this->logging = logging_;
     this->cash = cash_;
     this->starting_cash = cash_;
-    this->nlv = to_fixed_point(cash_);
+    this->nlv = cash_;
     this->portfolio_id = std::move(id_);
 }
 
@@ -63,7 +65,7 @@ void Portfolio::reset(bool clear_history)
     // reset starting member variables
     this->cash = this->starting_cash;
     this->unrealized_pl = 0;
-    this->nlv = to_fixed_point(this->starting_cash);
+    this->nlv = this->starting_cash;
 
     // reset portfolio history object
     this->portfolio_history->reset(clear_history);
@@ -405,8 +407,13 @@ void Portfolio::modify_position(shared_ptr<Order> filled_order)
     auto order_fill_price = filled_order->get_average_price();
 
     // adjust cash for modifying position
-    this->cash -= order_units * order_fill_price;
-    this->nlv_adjust(order_units * (order_fill_price - position->average_price));
+    auto amount = gmp_mult(order_units, order_fill_price);
+    gmp_sub_assign(this->cash, amount);
+
+    auto diff = gmp_sub(order_fill_price, position->average_price);
+    amount = gmp_mult(diff, order_units);
+
+    this->nlv_adjust(amount);
 }
 
 void Portfolio::close_position(shared_ptr<Order> filled_order)
@@ -431,7 +438,8 @@ void Portfolio::close_position(shared_ptr<Order> filled_order)
 
     // adjust cash held at the broker
     // sell order has units -XYZ, therefore need -=
-    this->cash -= filled_order->get_units() * filled_order->get_average_price();
+    auto amount = gmp_mult(filled_order->get_units(), filled_order->get_average_price());
+    gmp_sub_assign(this->cash, amount);
 
     // close all child trade of the position whose broker is equal to current broker id
     auto trades = position->get_trades();
@@ -513,7 +521,7 @@ void Portfolio::propogate_trade_close_up(trade_sp_t trade_sp, bool adjust_cash){
     position->adjust_trade(trade_sp);
 
     //adjust parent portfolio cash
-    auto cash_adjustment = trade_sp->get_units() * trade_sp->get_close_price();
+    auto cash_adjustment = gmp_mult(trade_sp->get_units(), trade_sp->get_close_price());
     parent->cash_adjust(cash_adjustment);
 
     //test to see if position should be removed
@@ -566,7 +574,7 @@ void Portfolio::propogate_trade_open_up(trade_sp_t trade_sp, bool adjust_cash){
         position->adjust_trade(trade_sp);
 
         //adjust parent portfolios cash
-        auto cash_adjustment = -1 * trade_sp->get_units() * trade_sp->get_average_price();
+        auto cash_adjustment = -1 * gmp_mult(trade_sp->get_units(),trade_sp->get_average_price());
         parent->cash_adjust(cash_adjustment);
 
         //log the new trade open for the parent
@@ -663,7 +671,7 @@ void Portfolio::evaluate(bool on_close)
     assert(!this->parent_portfolio);
     #endif
 
-    this->nlv = to_fixed_point(this->cash);
+    this->nlv = this->cash;
     this->unrealized_pl = 0;
 
     // evaluate all positions in the master portfolio. Note valuation will propogate down from whichever
@@ -697,10 +705,15 @@ void Portfolio::evaluate(bool on_close)
                 continue;
             }
 
-            auto nlv_new = trade->get_units() * to_fixed_point(market_price);
-            source_portfolio->nlv_adjust(nlv_new - trade->get_nlv());
-            source_position->nlv_adjust(nlv_new - trade->get_nlv());
-            
+            /// use gmp to get precesion adjustment
+            auto nlv_new = gmp_mult(trade->get_units(), market_price);
+            source_portfolio->nlv_adjust(
+                gmp_sub(nlv_new , trade->get_nlv())
+            );
+            source_position->nlv_adjust(
+                gmp_sub(nlv_new , trade->get_nlv())
+            );    
+
             auto unrealized_pl_new = trade->get_units() * (market_price - trade->get_average_price());
             source_portfolio->unrealized_adjust(unrealized_pl_new - trade->get_unrealized_pl());
             source_position->unrealized_adjust(unrealized_pl_new - trade->get_unrealized_pl());
@@ -717,7 +730,7 @@ void Portfolio::evaluate(bool on_close)
         }
 
         position->evaluate(market_price, on_close);
-        this->nlv += position->get_nlv();
+        gmp_add_assign(this->nlv, position->get_nlv());
         this->unrealized_pl += position->get_unrealized_pl();
     }
 }

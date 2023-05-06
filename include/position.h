@@ -6,6 +6,7 @@
 #define ARGUS_POSITION_H
 #include <optional>
 #include <string>
+#include <gmp.h>
 #include <tsl/robin_map.h>
 
 class Trade;
@@ -14,7 +15,7 @@ class Position;
 class Portfolio;
 
 #include "trade.h"
-#include "settings.h"
+#include "utils_gmp.h"
 
 using namespace std;
 
@@ -33,7 +34,7 @@ private:
     string exchange_id;
 
     /// net liquidation value of the position as a fixed point floating number
-    long long nlv = 0; 
+    double nlv = 0; 
 
     /// closing price of the position
     double close_price = 0;
@@ -102,7 +103,7 @@ public:
 
     /// @brief get the positions net liquidation value as last calculated
     /// @return net liquidation value of the position
-    long long get_nlv() const {return this->nlv;}
+    double get_nlv() const {return this->nlv;}
 
     /// @brief get the positions unrealized pl
     double get_unrealized_pl() const {return this->unrealized_pl;}
@@ -160,7 +161,7 @@ public:
 
     /// @brief adjust nlv by amount, allows trades to adjust source portfolio values
     /// @param nlv_adjustment adjustment size
-    void nlv_adjust(long long nlv_adjustment) {this->nlv += nlv_adjustment;};
+    void nlv_adjust(double nlv_adjustment) { gmp_add_assign(this->nlv, nlv_adjustment);};
 
     /// @brief adjust unrealized_pl by amount, allows trades to adjust source position values
     /// @param nlv_adjustment adjustment size
@@ -172,7 +173,8 @@ public:
     {
         this->last_price = market_price;
         this->unrealized_pl = this->units * (market_price - this->average_price);
-        this->nlv = to_fixed_point(market_price) * this->units;
+        this->nlv = gmp_mult(market_price, this->units);
+        
         if (on_close)
         {
             this->bars_held++;

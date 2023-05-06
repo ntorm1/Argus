@@ -189,9 +189,7 @@ void init_position_ext(py::module &m)
         .def("get_close_price", &Position::get_close_price)
         .def("get_last_price", &Position::get_last_price)
         .def("get_units", &Position::get_units)
-        .def("get_nlv", [](Position& self) {
-            return to_double(self.get_nlv());
-        })
+        .def("get_nlv", &Position::get_nlv)
         .def("get_unrealized_pl", &Position::get_unrealized_pl)
         .def("get_position_close_time", &Position::get_position_close_time)
         .def("get_position_open_time", &Position::get_position_open_time)

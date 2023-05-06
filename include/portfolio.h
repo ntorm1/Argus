@@ -10,13 +10,13 @@
 #include <mutex>
 
 class Broker;
-
 #include "order.h"
 #include "trade.h"
 #include "position.h"
 #include "account.h"
 #include "exchange.h"
 #include "settings.h"
+
 
 class PortfolioHistory;
 class PortfolioTracer;
@@ -76,7 +76,7 @@ public:
 
     /// @brief get the net liquidation as last calculated
     /// @return the net liquidation value of the portfolio
-    double get_nlv() const {return to_double(this->nlv);}
+    double get_nlv() const {return this->nlv;}
 
     /// @brief get the net liquidation as last calculated
     double get_unrealized_pl() const {return this->unrealized_pl;}
@@ -133,8 +133,8 @@ public:
 
     /// @brief adjust nlv by amount, allows trades to adjust source portfolio values
     /// @param nlv_adjustment adjustment size
-    void nlv_adjust(long long nlv_adjustment) {this->nlv += nlv_adjustment;};
-    void cash_adjust(double cash_adjustment) {this->cash += cash_adjustment;};
+    void nlv_adjust(double nlv_adjustment) {gmp_add_assign(this->nlv, nlv_adjustment);};
+    void cash_adjust(double cash_adjustment) {gmp_add_assign(this->cash, cash_adjustment);};
     void unrealized_adjust(double unrealized_adjustment) {this->unrealized_pl += unrealized_adjustment;};
 
     /// @brief generate and send nessecary orders to completely exist position by asset id (including all child portfolios)
@@ -302,7 +302,7 @@ private:
     double starting_cash;
 
     /// net liquidation value of the portfolio
-    long long nlv;
+    double nlv;
 
     /// unrealized_pl of the portfolio
     double unrealized_pl = 0;
@@ -364,7 +364,8 @@ void Portfolio::open_position(T open_obj, bool adjust_cash)
     // adjust cash held by broker accordingly
     if(adjust_cash)
     {
-        this->cash -= open_obj->get_units() * open_obj->get_average_price();
+        auto amount = gmp_mult(open_obj->get_units(), open_obj->get_average_price());
+        gmp_sub_assign(this->cash, amount);
     }
 
     // log the position if needed

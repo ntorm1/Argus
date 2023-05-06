@@ -125,7 +125,7 @@ public:
     double get_last_price(){return this->last_price;}
     double get_nlv(){return this->nlv;}
     double get_unrealized_pl(){return this->unrealized_pl;}
-    void set_nlv(long long nlv_){this->nlv = nlv_;}
+    void set_nlv(double nlv_){this->nlv = nlv_;}
     void set_last_price(double last_price_){this->last_price = last_price_;}
     void set_unrealized_pl(double unrealized_pl_){this->unrealized_pl = unrealized_pl_;}
 
@@ -159,7 +159,7 @@ private:
     string strategy_id;
 
     /// net liquidation value of the trade represented as a fixed point floating number
-    long long nlv;
+    double nlv;
 
     /// how many units in the trade
     double units;
