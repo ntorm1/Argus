@@ -410,10 +410,10 @@ void Hydra::backward_pass(){
     {
         this->log("order processing complete");
     }
-
+        
     //update historicals values
     this->master_portfolio->update();
-        
+
     if(this->logging == 1)
     {
         this->log("master portfolio updated");

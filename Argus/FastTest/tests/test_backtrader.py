@@ -257,16 +257,16 @@ def test_fp_error():
     ax1.plot(counts,bt_errors, alpha = .5, label = "Backtrader")
     ax1.plot(counts,ft_errors, alpha = .5, label = "FastTest")
     ax1.yaxis.set_major_formatter(mtick.PercentFormatter())
+    ax1.legend()
     plt.ylabel('error (pct of total nlv)')
     plt.ylabel('# Assets')
     plt.title("One Step Floating Point Error")
-    ax1.legend()
     plt.show()
     
 if __name__ == "__main__":
     test_fp_error()
     """
-    count = 200
+    count = 150
     step_count = 3000
     dfs = load_data(count, step_count)
     print(f"{count * step_count:,} candles loaded\n")
@@ -279,10 +279,16 @@ if __name__ == "__main__":
 
     print(f"fastest \033[32m{bt_time / ft_time:.4}x\033[0m faster")
     
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
     ax1.plot(bt_nlv, alpha = .5, label = "Backtrader")
     ax1.plot(ft_nlv, alpha = .5, label = "FastTest")
     ax1.legend()
+    
+    ax2.plot(ft_nlv - bt_nlv[0:len(ft_nlv)], alpha = .5, color = "black", label = "epsilon")
+    ax2.legend()
+    
+    fig.suptitle(f"{count} Assets with {step_count - 200} rows", fontsize=14, fontweight='bold')
+    plt.tight_layout()
     plt.show()
     """
+
