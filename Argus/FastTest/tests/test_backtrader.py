@@ -1,6 +1,7 @@
 import time
 import sys 
 import os
+import random
 from decimal import Decimal, getcontext
 from datetime import datetime
 
@@ -8,6 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import seaborn as sns
 
 sys.path.append(os.path.abspath('..'))
 
@@ -222,7 +224,7 @@ def test_fp_error():
     step_count = 203
     
     n_trials = 5
-    counts = [1,10,20,30,60,100,150,200,250,350,400,500]
+    counts = [1,10,20,30,60,100,150,200,250,350,450,500]
     ft_errors = []
     bt_errors = []
     
@@ -246,7 +248,7 @@ def test_fp_error():
             sum_product = (orders['units'] * orders['pl']).sum()
             
             true_nlv =  sum_product + Decimal("100000")
-
+                        
             ft_error += (true_nlv - Decimal(ft_nlv[1]))
             bt_error += (true_nlv - Decimal(bt_nlv[1]))
             
@@ -265,26 +267,34 @@ def test_fp_error():
     
 if __name__ == "__main__":
     test_fp_error()
+    
     """
-    count = 150
-    step_count = 3000
+    count = 1
+    step_count = 203
+    
     dfs = load_data(count, step_count)
-    print(f"{count * step_count:,} candles loaded\n")
-    print()
-    
-    ft_nlv, ft_cash, ft_time, orders = test_fasttest(dfs, log=True)
-    print()
-    bt_nlv, bt_time = test_backtrader(dfs,log = True)
-    print()
 
-    print(f"fastest \033[32m{bt_time / ft_time:.4}x\033[0m faster")
+
+    print(i)
+    #print(f"{count * step_count:,} candles loaded\n")
+    #print()
+                
+    ft_nlv, ft_cash, ft_time, orders = test_fasttest(d_shuffled, log=False)
+    #print()
+    bt_nlv, bt_time = test_backtrader(d_shuffled,log = False)
+    #print()
+
+    bt_nlv = bt_nlv[0:len(ft_nlv)]    
+    print(ft_nlv[-1], bt_nlv[-1])
     
+    #print(f"fastest \033[32m{bt_time / ft_time:.4}x\033[0m faster")
+        
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
     ax1.plot(bt_nlv, alpha = .5, label = "Backtrader")
     ax1.plot(ft_nlv, alpha = .5, label = "FastTest")
     ax1.legend()
     
-    ax2.plot(ft_nlv - bt_nlv[0:len(ft_nlv)], alpha = .5, color = "black", label = "epsilon")
+    ax2.plot(ft_nlv - bt_nlv, alpha = .5, color = "black", label = "epsilon")
     ax2.legend()
     
     fig.suptitle(f"{count} Assets with {step_count - 200} rows", fontsize=14, fontweight='bold')
