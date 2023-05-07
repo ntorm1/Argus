@@ -17,6 +17,10 @@ from Hal import Hal
 import FastTest
 from FastTest import PortfolioTracerType
 
+#import pybroker
+#from pybroker.data import DataSource
+#from pybroker import Strategy, StrategyConfig
+
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
@@ -103,7 +107,6 @@ class MovingAverageStrategy:
 class BT_MA_Cross_Strategy(bt.Strategy):
     def __init__(self) -> None:
         super().__init__()
-    """
     def notify_order(self, order):
         # Check if an order has been completed
         if order.status in [order.Completed]:
@@ -114,7 +117,6 @@ class BT_MA_Cross_Strategy(bt.Strategy):
                 f"Size: {order.created.size:9.4f} "
             )
                 
-    """
     def next(self):
         ma_signal = {d : d.ma_signal[0] for d in self.datas}
         
@@ -230,7 +232,6 @@ def test_fp_error():
     
     getcontext().prec = 50
     for count in counts:
-        print(count)
         ft_error = 0
         bt_error = 0
         for i in range(n_trials):
@@ -254,6 +255,7 @@ def test_fp_error():
             
         ft_errors.append((ft_error / n_trials)/ 100000)
         bt_errors.append((bt_error / n_trials)/ 100000)
+        print(f"{count} Asset, FastTest Absolute Error: {ft_errors[-1]:.7f}$, Backtrader Abolute Error: {bt_errors[-1]:.7f}$")
         
     fig, ax1 = plt.subplots()
     ax1.plot(counts,bt_errors, alpha = .5, label = "Backtrader")
@@ -264,25 +266,89 @@ def test_fp_error():
     plt.ylabel('# Assets')
     plt.title("One Step Floating Point Error")
     plt.show()
+   
+"""
+def test_pybroker(dfs):
+    config = StrategyConfig(initial_cash=100_000)
+    pybroker.register_columns('ma_signal')
+    df = dfs["asset0"].copy()
+    df["symbol"] = "asset0"
+    df["high"] = df["Open"]
+    df["low"] = df["Open"]
+    df["Close"] = df["Open"]
+    df.reset_index(inplace = True)
+    df.rename(columns={"Open" : "open",'Close': 'close', "index" : "date"}, inplace=True)
+    
+    def ma_cross(ctx):
+        pos_long = ctx.long_pos()
+        pos_short = ctx.short_pos()
+        
+        if not pos_long and ctx.ma_signal[-1] == 1:
+            ctx.buy_shares = 100
+        elif pos_long and ctx.ma_signal[-1] == 0:
+            ctx.sell_shares = 200
+        elif not pos_short and ctx.ma_signal[-1] == 0:
+            ctx.sell_shares = 100
+        elif pos_short and ctx.ma_signal[-1] == 1:
+            ctx.buy_shares = 200  
+        
+    
+    strategy = Strategy(df, df["date"].values[0].astype(str), df["date"].values[-1].astype(str))
+    strategy.add_execution(ma_cross, ['asset0'])
+    result = strategy.backtest()
+    print(result.orders)
+    
+    hal = Hal(logging=0, cash = 100000.0)
+    broker = hal.new_broker("test",0.0)
+    exchange = hal.new_exchange("test")
+    
+    portfolio = hal.get_portfolio("master")
+    portfolio.add_tracer(PortfolioTracerType.EVENT)
+
+    for asset_id, df in dfs.items():
+        if asset_id != "asset0":
+            continue
+        hal.register_asset_from_df(df, asset_id, "test", "test", warmup = 1) 
+        
+    strategy = MovingAverageStrategy(hal)
+    hal.register_strategy(strategy, " test") 
+    
+    hal.build()
+    lt = time.time()
+    hal.run()
+    et = time.time()
+    
+    nlv_ft = portfolio.get_tracer(PortfolioTracerType.VALUE).get_nlv_history()
+    cash = portfolio.get_tracer(PortfolioTracerType.VALUE).get_cash_history()
+    
+    nlv_pyb = result.portfolio['market_value'].values
+    print(result.portfolio)
+    print(nlv_pyb, nlv_ft)
+    
+    orders = hal.get_order_history() 
+    print(orders)
+"""
     
 if __name__ == "__main__":
-    test_fp_error()
-    
-    """
     count = 1
-    step_count = 203
+    step_count = 500
+    
+    #test_fp_error()
     
     dfs = load_data(count, step_count)
-
-
-    print(i)
+    
+    #test_pybroker(dfs)
+    
     #print(f"{count * step_count:,} candles loaded\n")
     #print()
                 
-    ft_nlv, ft_cash, ft_time, orders = test_fasttest(d_shuffled, log=False)
+    ft_nlv, ft_cash, ft_time, orders = test_fasttest(dfs, log=False)
     #print()
-    bt_nlv, bt_time = test_backtrader(d_shuffled,log = False)
+    bt_nlv, bt_time = test_backtrader(dfs,log = False)
     #print()
+    
+    print("FastTest orders:")
+    print(orders)
 
     bt_nlv = bt_nlv[0:len(ft_nlv)]    
     print(ft_nlv[-1], bt_nlv[-1])
@@ -300,5 +366,4 @@ if __name__ == "__main__":
     fig.suptitle(f"{count} Assets with {step_count - 200} rows", fontsize=14, fontweight='bold')
     plt.tight_layout()
     plt.show()
-    """
 

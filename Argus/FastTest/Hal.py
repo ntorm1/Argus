@@ -151,9 +151,9 @@ def asset_from_df(df: Type[pd.DataFrame],
                 exchange_id : str,
                 broker_id : str,
                 warmup = 0) -> Asset:
-    """generate a new asset object from a pandas dataframe. Pandas index must have a datetime
-    index. An easy conversion from datetime str as: df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)
-
+    """generate a new asset object from a pandas dataframe. Pandas index must have a pandas datetime
+    index or a ns epoch time index
+    
     Args:
         df (Type[pd.DataFrame]): new pandas dataframe to create asset with
         asset_id (str): unique id of the new asset
@@ -164,6 +164,13 @@ def asset_from_df(df: Type[pd.DataFrame],
     """
     # extract underlying numpy arrays
     values = df.values.astype(np.float64)
+    
+    #convert datetime index to ns epoch time
+    if isinstance(df.index, pd.DatetimeIndex):
+        df.set_index((df.index).astype(np.int64), inplace=True)
+    elif df.index.dtype == 'object':
+        df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)
+
     epoch_index = df.index.values.astype(np.int64)
 
     # load the asset
