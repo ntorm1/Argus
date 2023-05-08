@@ -419,23 +419,23 @@ public:
     vector<double> cash_history;
 
     /// Tracer type
-    PortfolioTracerType tracer_type() const {return PortfolioTracerType::Value;}
+    PortfolioTracerType tracer_type() const override {return PortfolioTracerType::Value;}
     
     /// step function
-    void step()
+    void step() override
     {
         this->cash_history.push_back(this->parent_portfolio->get_cash());
         this->nlv_history.push_back(this->parent_portfolio->get_nlv());
     };
 
     /// build function, reserve space for vector to prevent extra
-    void build(size_t portfolio_eval_length){
+    void build(size_t portfolio_eval_length) override{
         this->nlv_history.reserve(portfolio_eval_length);
         this->cash_history.reserve(portfolio_eval_length);
     }
 
     /// build function
-    void reset(){
+    void reset() override{
         this->nlv_history.clear();
         this->cash_history.clear();
     }
@@ -468,16 +468,16 @@ public:
     void remember_position( shared_ptr<Position> event){this->positions.push_back(event);}
 
     /// tracer type
-    PortfolioTracerType tracer_type() const {return PortfolioTracerType::Event;}
+    PortfolioTracerType tracer_type() const override {return PortfolioTracerType::Event;}
 
     /// empty stepper
-    void step(){}
+    void step() override {}
 
     /// build event tracer
-    void build(size_t portfolio_eval_length){}
+    void build(size_t portfolio_eval_length) override {}
 
     /// reset event tracer
-    void reset(){
+    void reset() override{
         this->orders.clear();
         this->trades.clear();
         this->positions.clear();

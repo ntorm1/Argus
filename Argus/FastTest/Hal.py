@@ -67,15 +67,15 @@ class Hal:
         exchange = self.hydra.get_exchange(exchange_id)
         exchange.register_asset(asset)
         
-    def register_strategy(self, py_strategy, strategy_id : str) -> None:
+    def register_strategy(self, py_strategy, strategy_id : str, replace_if_exists : bool = True) -> None:
         for attr in ["on_open","on_close","build"]:
             if not hasattr(py_strategy, attr):
                 raise RuntimeError(f"strategy must implement {attr}()")
             
         if strategy_id in self.strategies.keys():
             raise RuntimeError("strategy id already exists")
-            
-        strategy = self.hydra.new_strategy()
+        
+        strategy = self.hydra.new_strategy(strategy_id, replace_if_exists)
         strategy.on_open = py_strategy.on_open
         strategy.on_close = py_strategy.on_close    
                 

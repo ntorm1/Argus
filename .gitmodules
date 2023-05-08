@@ -2,12 +2,12 @@
 	path = external/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = stable
-[submodule "external/robin-map"]
-	path = external/robin-map
-	url = https://github.com/Tessil/robin-map.git
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
 [submodule "doxygen-awesome-css"]
 	path = doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "external/robin-map"]
+	path = external/robin-map
+	url = https://github.com/Tessil/robin-map.git

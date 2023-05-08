@@ -18,6 +18,7 @@
 #include "portfolio.h"
 #include "settings.h"
 #include "utils_time.h"
+#include "utils_array.h"
 
 namespace py = pybind11;
 using namespace std;
@@ -182,8 +183,35 @@ shared_ptr<Portfolio> Hydra::new_portfolio(const string & portfolio_id_, double 
     return portfolio;
 }
 
-shared_ptr<Strategy> Hydra::new_strategy(){
-    auto strategy = std::make_shared<Strategy>();
+void Hydra::remove_strategy(string strategy_id_)
+{
+    auto _strategy = sorted_vector_remove(
+        this->strategies,
+        [&strategy_id_](const shared_ptr<Strategy> &obj)
+        { return obj->get_strategy_id() == strategy_id_; },
+        strategy_id_);
+    
+}
+
+shared_ptr<Strategy> Hydra::new_strategy(string strategy_id_, bool replace_if_exists){
+    // remove a strategy by id if exists
+    if(replace_if_exists)
+    {
+        this->remove_strategy(strategy_id_);
+    }
+    // else make sure strategy with the same id doesn't exist
+    else 
+    {
+        for(auto& strategy : this->strategies)
+        {
+            if(strategy->get_strategy_id() == strategy_id_)
+            {
+                throw std::runtime_error("unique strategy id already exists");
+            }
+        }
+    }
+    
+    auto strategy = std::make_shared<Strategy>(strategy_id_);
     this->strategies.push_back(strategy);
     return strategy;
 }

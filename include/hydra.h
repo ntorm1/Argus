@@ -136,7 +136,10 @@ public:
     shared_ptr<Exchange> new_exchange(const string &exchange_id);
 
     /// create new strategy class
-    shared_ptr<Strategy> new_strategy();
+    shared_ptr<Strategy> new_strategy(string strategy_id = "default", bool replace_if_exists = false);
+
+    /// remove a strategy class from the vector of registered strategies
+    void remove_strategy(string strategy_id);
 
     /// get shared pointer to a broker
     broker_sp_t get_broker(const string &broker_id);

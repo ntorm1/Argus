@@ -98,7 +98,9 @@ void init_hydra_ext(py::module &m)
         .def("backward_pass", &Hydra::backward_pass)
         #endif
 
-        .def("new_strategy", &Hydra::new_strategy)
+        .def("new_strategy", &Hydra::new_strategy,
+            py::arg("strategy_id") = "default",
+            py::arg("replace_if_exists") = true)
         .def("new_exchange", &Hydra::new_exchange, py::return_value_policy::reference)
         .def("new_broker", &Hydra::new_broker, py::return_value_policy::reference)
         .def("new_portfolio", &Hydra::new_portfolio, py::return_value_policy::reference)

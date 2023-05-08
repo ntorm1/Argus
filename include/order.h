@@ -28,6 +28,10 @@ enum OrderType
     TAKE_PROFIT_ORDER                  /**< take profit order */
 };
 
+/**
+ * @brief An enumeration representing the current start of an order
+ * 
+ */
 enum OrderState
 {
     PENDING,  // order has been created but yet to be sent
@@ -36,12 +40,22 @@ enum OrderState
     CANCELED, // order has been canceled by a strategy
 };
 
+/**
+ * @brief An enumeration representning the execution type of the order. An order can either
+ * be sent by the broker as soon as it recieves it, or it can wait till the end of the open/close period.
+ * 
+ */
 enum OrderExecutionType
 {
     EAGER, // order will be placed as soon as the broker gets it
     LAZY   // order will be placed in broker send orders sweep
 };
 
+/**
+ * @brief An enumeration representing the type of order target used for portfolio target functions.
+ * Allows portfolio to easily place orders expressed in various units, not just number of shares or amount of the underlying. 
+ * 
+ */
 enum OrderTargetType
 {
     UNITS,   // order target size will be processed as units
@@ -49,6 +63,11 @@ enum OrderTargetType
     PCT      // order target size will be processed as pct of total pct of the source portfolio
 };
 
+/**
+ * @brief An enumeration representing the type of parent used for order's that require an order parent.
+ * Orders like take-profit or stop-loss require a parent, either an open order or an open trade.
+ * 
+ */
 enum OrderParentType
 {
     TRADE, /// parent of the order is a smart pointer to a trade

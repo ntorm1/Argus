@@ -7,15 +7,19 @@
 #include <queue>
 #include <span>
 #include <memory>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <stdexcept>
 
 using namespace std;
 
 namespace py = pybind11;
 
-template<typename T, typename Func>
-inline T unsorted_vector_remove(vector<T> &vec, Func func, unsigned int id){
+template<typename T, typename Func, typename I>
+inline T unsorted_vector_remove(vector<T> &vec, Func func, I id){
+    static_assert(std::is_invocable_r<I, Func, T>::value, "Func must take parameter of type T and return type I.");
+
     size_t index = 0;
     bool found_item = false;
     for(const auto& item : vec){
@@ -38,6 +42,24 @@ inline T unsorted_vector_remove(vector<T> &vec, Func func, unsigned int id){
     return order;
 }
 
+template<typename T, typename Func, typename I>
+inline T sorted_vector_remove(vector<T> &vec, Func func, I id)
+{
+    auto it = std::find_if(
+        vec.begin(),
+        vec.end(),
+         func);
+
+    if(it == vec.end())
+    {
+        //hacky way to return if not found
+        return nullptr;
+    }
+
+    auto item = std::move(*it);
+    vec.erase(it);
+    return item;
+}
 
 
 template<typename T>

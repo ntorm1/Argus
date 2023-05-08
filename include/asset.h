@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <string>
 #include <memory>
-#include <utility>
 #include <vector>
 #include <cmath>
 #include <tsl/robin_map.h>

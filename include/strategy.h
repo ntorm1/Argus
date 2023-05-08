@@ -2,27 +2,41 @@
 #include <functional>
 #include <string>
 
-#include "pybind11/gil.h"
-
-namespace py = pybind11;
-
+using namespace std;
 
 class Strategy
 {
 public:
+    //get the unique id of the strategy
+    const string & get_strategy_id(){return this->strategy_id;}
+
     std::function<void()> python_handler_on_open;
     std::function<void()> cxx_handler_on_open;
 
     std::function<void()> python_handler_on_close;
     std::function<void()> cxx_handler_on_close;
 
-    Strategy()
+    Strategy(string strategy_id_)
     {
-        cxx_handler_on_open = [this](void) { return python_handler_on_open(); };
-        cxx_handler_on_close = [this](void) {
+        // assign strategy id
+        this->strategy_id = strategy_id_;
+
+        // set c++ lambda functions to point to return the python functions registered
+        cxx_handler_on_open = [this](void) 
+        { 
+            // call python object's on_close() method to generate orders
+            return python_handler_on_open(); 
+        };
+        cxx_handler_on_close = [this](void) 
+        {
             // call python object's on_close() method to generate orders
             return python_handler_on_close(); 
 
         };
     }
+
+private:
+    ///unique id of the strategy
+    string strategy_id;
+
 };
