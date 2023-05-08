@@ -2,6 +2,7 @@
 // Created by Nathan Tormaschy on 4/21/23.
 //
 #include <cstdio>
+#include <stdexcept>
 #include <string>
 #include <memory>
 #include <fmt/core.h>
@@ -53,12 +54,20 @@ void Broker::reset_broker()
 
 void Broker::cancel_order(unsigned int order_id)
 {
-    auto order = unsorted_vector_remove(
+    auto order_opt = unsorted_vector_remove(
         this->open_orders,
         [](const shared_ptr<Order> &obj)
         { return obj->get_order_id(); },
         order_id);
 
+    if(!order_opt.has_value())
+    {
+        throw std::runtime_error("failed to find order id to cancel");
+    }
+
+    //unwrap optional we know has value
+    auto order = order_opt.value();
+    
     // set the order state to cancel
     order->set_order_state(CANCELED);
 

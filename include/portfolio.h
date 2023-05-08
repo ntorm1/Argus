@@ -335,21 +335,18 @@ private:
     void propogate_trade_close_up(trade_sp_t trade_sp, bool adjust_cash);
 
     //============== logging helper functions ==============//
-    void log_order_create(order_sp_t &filled_order);
-    void log_order_fill(order_sp_t &filled_order);
-    void log_position_open(shared_ptr<Position> &new_position);
-    void log_position_close(shared_ptr<Position> &closed_position);
-    void log_trade_close(shared_ptr<Trade> &closed_trade);
-    void log_trade_open(trade_sp_t &new_trade);
+    void log_order_create   (order_sp_t    &filled_order);
+    void log_order_fill     (order_sp_t    &filled_order);
+    void log_position_open  (position_sp_t &new_position);
+    void log_position_close (position_sp_t &closed_position);
+    void log_trade_close    (trade_sp_t    &closed_trade);
+    void log_trade_open     (trade_sp_t    &new_trade);
 
 };
 
 template<typename T>
 void Portfolio::open_position(T open_obj, bool adjust_cash)
 {   
-    #ifdef DEBUGGING
-    fmt::print("Portfolio::open_position: {}\n",this->portfolio_id);
-    #endif
     // build the new position and increment position counter used to set ids
     auto position = make_shared<Position>(open_obj);
 
@@ -361,7 +358,7 @@ void Portfolio::open_position(T open_obj, bool adjust_cash)
 
     this->propogate_trade_open_up(trade_sp, adjust_cash);
 
-    // adjust cash held by broker accordingly
+    // adjust cash held by portfolio accordingly
     if(adjust_cash)
     {
         auto amount = gmp_mult(open_obj->get_units(), open_obj->get_average_price());
@@ -374,10 +371,6 @@ void Portfolio::open_position(T open_obj, bool adjust_cash)
         this->log_position_open(position);
         this->log_trade_open(trade_sp);
     }
-
-    #ifdef DEBUGGING
-    fmt::print("Portfolio::open_position: {} done\n",this->portfolio_id);
-    #endif
 }
 
 class PortfolioTracer

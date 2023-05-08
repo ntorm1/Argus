@@ -446,6 +446,14 @@ py::dict Exchange::get_exchange_feature(
     ExchangeQueryType query_type,
     int N)
 {
+    // the row must is not allowed to look into the future. Row 0 means the current row for the asset
+    // -1 means the previous, etc. The row must be valid for all asset's passed. 
+    if(row > 0)
+    {
+        throw std::runtime_error("row must be less than 0");
+    }
+
+    // if N = -1 than set it equal to the market_view, i.e. all asset's streaming.
     size_t number_assets;
     if(N == -1)
     {
@@ -506,6 +514,7 @@ py::dict Exchange::get_exchange_feature(
     }
 
     switch (query_type) {
+        // get the assets with the N smallest values for the given column
         case ExchangeQueryType::NSmallest:
             for(size_t i = 0; i < number_assets; i++)
             {
@@ -513,6 +522,7 @@ py::dict Exchange::get_exchange_feature(
                 py_dict[pair.first.c_str()] = pair.second;
             }
             break;
+        // get the assets with the N largest values for the given column
         case ExchangeQueryType::NLargest:
             for(size_t i = 0; i < number_assets; i++)
             {
@@ -520,6 +530,7 @@ py::dict Exchange::get_exchange_feature(
                 py_dict[pair.first.c_str()] = pair.second;
             }
             break;
+        //get the N/2 smallest and N/2 largest values for the given column
         case ExchangeQueryType::NExtreme: //skips integer reaminder (i.e. N=3 returns 2 assets)
             for(size_t i = 0; i < std::floor(number_assets/2); i++)
             {

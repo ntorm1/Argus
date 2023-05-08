@@ -188,8 +188,7 @@ void Hydra::remove_strategy(string strategy_id_)
     auto _strategy = sorted_vector_remove(
         this->strategies,
         [&strategy_id_](const shared_ptr<Strategy> &obj)
-        { return obj->get_strategy_id() == strategy_id_; },
-        strategy_id_);
+        { return obj->get_strategy_id() == strategy_id_; });
     
 }
 

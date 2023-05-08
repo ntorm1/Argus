@@ -4,6 +4,7 @@
 
 #ifndef ARGUS_UTILS_ARRAY_H
 #define ARGUS_UTILS_ARRAY_H
+#include <optional>
 #include <queue>
 #include <span>
 #include <memory>
@@ -17,13 +18,14 @@ using namespace std;
 namespace py = pybind11;
 
 template<typename T, typename Func, typename I>
-inline T unsorted_vector_remove(vector<T> &vec, Func func, I id){
+inline optional<T> unsorted_vector_remove(vector<T> &vec, Func func, I id){
     static_assert(std::is_invocable_r<I, Func, T>::value, "Func must take parameter of type T and return type I.");
 
     size_t index = 0;
     bool found_item = false;
     for(const auto& item : vec){
-        if(func(item) == id){
+        if(func(item) == id)
+        {
             found_item = true;
             break;
         }
@@ -31,10 +33,12 @@ inline T unsorted_vector_remove(vector<T> &vec, Func func, I id){
             index++;
         }
     }
-    if(!found_item){
-        throw std::runtime_error("failed to find item id in container");
+    if(!found_item)
+    {
+        return nullopt;
     }
-    else {
+    else 
+    {
         std::swap(vec[index], vec.back());
     }
     auto order =  vec.back();
@@ -42,9 +46,12 @@ inline T unsorted_vector_remove(vector<T> &vec, Func func, I id){
     return order;
 }
 
-template<typename T, typename Func, typename I>
-inline T sorted_vector_remove(vector<T> &vec, Func func, I id)
+template<typename T, typename Func>
+inline optional<T> sorted_vector_remove(vector<T> &vec, Func func)
 {
+    // func must take type T and return bool as to wether it is the item to remove
+    static_assert(std::is_invocable_r<bool, Func, T>::value, "Func must take parameter of type T and return type bool.");
+    
     auto it = std::find_if(
         vec.begin(),
         vec.end(),
@@ -52,10 +59,11 @@ inline T sorted_vector_remove(vector<T> &vec, Func func, I id)
 
     if(it == vec.end())
     {
-        //hacky way to return if not found
-        return nullptr;
+        // item is not found
+        return nullopt;
     }
 
+    // move item out of the vector then erase the iterator 
     auto item = std::move(*it);
     vec.erase(it);
     return item;

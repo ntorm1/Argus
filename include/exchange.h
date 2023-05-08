@@ -109,7 +109,17 @@ public:
     /// get a values from asset data by column and row, (index 0 is current, row -1 is previous row)
     optional<double> get_asset_feature(const string& asset_id, const string& column, int index = 0);
 
-    /// get series of values for all asset's listed on the exchange
+    /**
+     * @brief Get asset feature for every asset listed on the exchange. 
+     *  - Every asset on the exchange must have the passed column
+     *  - If a asset is not currently streaming it will be skipped
+     * 
+     * @param column the name of the column to query
+     * @param row the index of the row to get, 0 is current, -1 is previous, etc.
+     * @param query_type the type of the query, allows for efficent sorting and complex queries
+     * @param N number of assets to query, defaults to -1 which returns all
+     * @return py::dict 
+     */
     py::dict get_exchange_feature(
         const string& column, 
         int row = 0, 
