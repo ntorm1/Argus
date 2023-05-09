@@ -164,6 +164,8 @@ public:
      */
     [[nodiscard]] py::array_t<double> get_column(const string& column_name, size_t length);
 
+    double* get_column_ptr(size_t column_index);
+
     /// step the asset forward in time
     void step();
 
@@ -234,8 +236,7 @@ protected:
 class BetaTracer : AssetTracer
 {
 public:
-    BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_) 
-        : AssetTracer(parent_asset_), index_asset(index_asset_), lookback(lookback_){}
+    BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_);
 
     /// pure virtual function called on parent asset step
     void step() override {}
@@ -252,6 +253,12 @@ private:
 
     /// lookback period of the beta tracer
     size_t lookback;
+
+    /// parent asset window
+    Argus::ArrayWindow<double> asset_window;
+
+    /// index asset window
+    Argus::ArrayWindow<double> index_window;
 
 };
 

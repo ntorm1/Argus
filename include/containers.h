@@ -28,6 +28,15 @@ struct ArrayWindow
     /// latest value to be popped off of  the end
     T popped_element;
 
+    ArrayWindow() = default;
+    ArrayWindow(T* start_ptr, size_t stride, size_t length)
+    {
+        this->start_ptr = start_ptr;
+        this->end_ptr = start_ptr + (stride * length);
+        this->stride = stride;
+        this->length = length;
+    };
+
     /**
      * @brief step the sliding window forward one position
      * 

@@ -148,13 +148,13 @@ tuple<T* , int> sorted_union(T const * p1, T const* p2, size_t n, size_t m) {
  * @param hash_map the container holding the elements to iterate over
  * @return pointer to dynamically allocated array
  *
- * @tparam Hashmap The type of the container. It must support iteration over its values.
+ * @tparam Container The type of the container. It must support iteration over its values.
  * @tparam IndexLoc function to call on container elements to get array location
  * @tparam IndexLen function to call on container elements to get array length
  */
-template<typename Hashmap, typename IndexLoc, typename IndexLen>
+template<typename Container, typename IndexLoc, typename IndexLen>
 tuple<long long* , int> inline container_sorted_union(
-        Hashmap& hash_map,
+        Container& hash_map,
         IndexLoc index_loc,
         IndexLen index_len) {
     //allocate location for new sorted array
@@ -189,11 +189,11 @@ tuple<long long* , int> inline container_sorted_union(
 /**
  * @brief Helper function to determine if an array p1 contains another array p2 within it.
  *  p1 contains p2 if there is i,j such that p1[i:j] = p2[i:j] for all i<=x<j
- *  i.e. [1,2,3,4,5] contains [2,3,4] but not [4,5,6] 
+ *  i.e. [1,2,3,4,5] contains [2,3,4] but not [4,5,6] or [2,4,5]
  *
  * @tparam T template type of the array
- * @param p1 parent array to test if contains the sub array
- * @param p2 sub array to test if it is contained within the parent array
+ * @param p1 sorted unique array to test if contains the sub array
+ * @param p2 sorted unique sub array to test if it is contained within the parent array
  * @param l1 length of the parent array
  * @param l2 length of the child array
  * @return true p1 contains p2
@@ -208,11 +208,31 @@ bool contains(T* p1, T* p2, size_t l1, size_t l2)
         return false;
     }
 
-    //TODO
+    size_t j = 0;
+    for(size_t i = 0; i < l1; i ++)
+    {   
+        // search for first value that matches 
+        if(p1[i] != p2[j])
+        {
+            j++;
+            continue;
+        }
+
+        // found an element that doest not match 
+        if(p1[i] != p2[j])
+        {
+            return false;
+        }   
+
+        // reached the end of the sub array with all elements batching 
+        if(i == l2)
+        {
+            break;
+        }
+    }
 
     return true;
 }
-
 
 #endif //ARGUS_UTILS_ARRAY_H
 

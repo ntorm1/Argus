@@ -8,13 +8,17 @@
 #include "algorithm"
 
 #include "asset.h"
+#include "containers.h"
 #include "settings.h"
+#include "utils_array.h"
 #include "utils_string.h"
 #include "fmt/core.h"
 #include "pybind11/numpy.h"
 
 namespace py = pybind11;
+
 using namespace std;
+using namespace Argus;
 
 using asset_sp_t = Asset::asset_sp_t;
 
@@ -324,6 +328,11 @@ py::array_t<double> Asset::get_column(const string& column_name, size_t length)
     );
 }
 
+double* Asset::get_column_ptr(size_t column_index)
+{
+    return this->data + column_index;
+}
+
 long long *Asset::get_datetime_index(bool warmup_start) const
 {   
     if(warmup_start)
@@ -404,6 +413,19 @@ void Asset::step(){
     this->current_index++; 
 }
 
+BetaTracer::BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_) 
+        : AssetTracer(parent_asset_), index_asset(index_asset_), lookback(lookback_)
+{
+    this->asset_window = ArrayWindow<double>(
+        parent_asset_->get_column_ptr(parent_asset_->close_column),
+        parent_asset_->get_cols(),
+        parent_asset_->get_rows());
+    this->index_window = ArrayWindow<double>(
+        index_asset_->get_column_ptr(index_asset_->close_column),
+        index_asset_->get_cols(),
+        index_asset_->get_rows());
+}
+
 void BetaTracer::build()
 {
     // the parent asset and index asset must have the same frequencies.
@@ -412,8 +434,14 @@ void BetaTracer::build()
         ARGUS_RUNTIME_ERROR("frequencies must be the same");
     }
     // make sure the lookback period is not greater than the number of rows loaded
-    if(parent_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
+    if(index_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
     {   
         ARGUS_RUNTIME_ERROR("lookback greater than row count");
+    }
+    // make sure the index datetime index contains the asset's datetime index
+    if(!contains(index_asset->get_datetime_index(), index_asset->get_datetime_index(), 
+                 index_asset->get_rows(), index_asset->get_rows()))
+    {
+        ARGUS_RUNTIME_ERROR("market index must contain asset");
     }
 }
