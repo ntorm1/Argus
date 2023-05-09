@@ -14,6 +14,7 @@
 #include <pybind11/numpy.h>
 
 #include "utils_array.h"
+#include "containers.h"
 
 namespace py = pybind11;
 using namespace std;
@@ -21,31 +22,43 @@ using namespace std;
 class Asset;
 class AssetTracer;
 
+enum AssetTracerType
+{
+    Beta
+};
+
+ enum AssetFrequency
+ {
+    Daily
+ };
+
 
 class Asset
 {
 public:
     typedef shared_ptr<Asset> asset_sp_t;
 
-    /// asset constructor
-    Asset(string asset_id, string exchange_id, string broker_id, size_t warmup = 0);
+    /**
+     * @brief Asset object constructor
+     * 
+     * @param asset_id      unique id of the asset
+     * @param exchange_id   unique id of the exchange the asset is registerd on
+     * @param broker_id     unique id of the broker the asset is registered on 
+     * @param warmup        warmup period of the asset (number of rows skipped but still loaded)
+     * @param frequency_    frequency of the rows (1D, 1H, etc...)
+     */
+    Asset(
+        string asset_id, 
+        string exchange_id, 
+        string broker_id, 
+        size_t warmup = 0, 
+        AssetFrequency frequency_ = AssetFrequency::Daily
+    );
 
     /// asset destructor
     ~Asset();
 
-    /**
-     * @brief fork an asset into a view, the new object will be a new object entirly except for the 
-     *        data and datetime index pointers, they will point to this existing object (i.e. no dyn alloc)
-     * 
-     * @return asset_sp_t new asset object in a smart pointer
-     */
-    asset_sp_t fork_view();
-
-    /// reset asset to start of data
-    void reset_asset();
-
-    /// move the asset to an exact point in time
-    void goto_datetime(long long datetime);
+    AssetFrequency frequency;
 
     /// unique id of the asset
     string asset_id;
@@ -68,6 +81,20 @@ public:
     /// index of the close column
     size_t close_column;
 
+    /**
+     * @brief fork an asset into a view, the new object will be a new object entirly except for the 
+     *        data and datetime index pointers, they will point to this existing object (i.e. no dyn alloc)
+     * 
+     * @return asset_sp_t new asset object in a smart pointer
+     */
+    asset_sp_t fork_view();
+
+    /// reset asset to start of data
+    void reset_asset();
+
+    /// move the asset to an exact point in time
+    void goto_datetime(long long datetime);
+    
     /// is the the last row in the asset
     bool is_last_view() {return this->current_index == this->rows;};
 
@@ -180,5 +207,52 @@ std::shared_ptr<Asset> new_asset(
 
 /// function for identifying index locations of open and close column
 tuple<::size_t, size_t> parse_headers(const vector<std::string> &columns);
+
+class AssetTracer
+{
+public:
+    /// Asset Tracer constructor 
+    AssetTracer(Asset* parent_asset_) : parent_asset(parent_asset_){};
+
+    /// Asset Tracer default destructor 
+    virtual ~AssetTracer() = default;
+
+    /// pure virtual function called on parent asset step
+    virtual void step() = 0;
+
+    // pure virtual function to build the tracer
+    virtual void build() = 0;
+
+    // pure virtual function to reset the tracer
+    virtual void reset() = 0;
+
+protected:
+    /// pointer to the parent asset of the tracer
+    Asset* parent_asset;
+};
+
+class BetaTracer : AssetTracer
+{
+public:
+    BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_) 
+        : AssetTracer(parent_asset_), index_asset(index_asset_), lookback(lookback_){}
+
+    /// pure virtual function called on parent asset step
+    void step() override {}
+
+    // pure virtual function to build the tracer
+    void build() override;
+
+    // pure virtual function to reset the tracer
+    void reset() override {};
+
+private:
+    /// pointer to the index asset
+    Asset* index_asset;
+
+    /// lookback period of the beta tracer
+    size_t lookback;
+
+};
 
 #endif // ARGUS_ASSET_H

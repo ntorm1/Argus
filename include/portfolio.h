@@ -382,11 +382,11 @@ public:
     /// Tracer default desctructor
     virtual ~PortfolioTracer() = default;
 
-    /// pure virtual step function to be called on new step
-    virtual void step() = 0;
-
     /// pure virtual function to get tracer type
     virtual PortfolioTracerType tracer_type() const = 0;
+
+    /// pure virtual step function to be called on new step
+    virtual void step() = 0;
 
     // pure virtual function to build the tracer
     virtual void build(size_t portfolio_eval_length) = 0;

@@ -4,6 +4,7 @@
 
 #ifndef ARGUS_UTILS_ARRAY_H
 #define ARGUS_UTILS_ARRAY_H
+
 #include <optional>
 #include <queue>
 #include <span>
@@ -96,32 +97,32 @@ bool array_eq(T const * a, T const * b, size_t length){
 }
 
 template<class T>
-tuple<T* , int> sorted_union(T const * a, T const* b, size_t n, size_t m) {
+tuple<T* , int> sorted_union(T const * p1, T const* p2, size_t n, size_t m) {
     int i = 0, j = 0, k = 0;
     auto* result = new T[n + m];
     priority_queue<T, vector<T>, greater<>> pq;
 
     while (i < n && j < m) {
-        if (a[i] < b[j]) {
-            pq.push(a[i]);
+        if (p1[i] < p2[j]) {
+            pq.push(p1[i]);
             i++;
-        } else if (b[j] < a[i]) {
-            pq.push(b[j]);
+        } else if (p2[j] < p1[i]) {
+            pq.push(p2[j]);
             j++;
         } else {
-            pq.push(a[i]);
+            pq.push(p1[i]);
             i++;
             j++;
         }
     }
 
     while (i < n) {
-        pq.push(a[i]);
+        pq.push(p1[i]);
         i++;
     }
 
     while (j < m) {
-        pq.push(b[j]);
+        pq.push(p2[j]);
         j++;
     }
 
@@ -185,41 +186,32 @@ tuple<long long* , int> inline container_sorted_union(
     return std::make_tuple(sorted_array, length);
 }
 
-template <typename T>
-class FixedDeque {
-public:
-    explicit FixedDeque(size_t max_size)
-        : max_size_(max_size) {
-    }
-
-    void push_back(const T& value) {
-        if (data_.size() == max_size_) {
-            data_.pop_front();
-        }
-        data_.push_back(value);
-    }
-
-    void clear()
+/**
+ * @brief Helper function to determine if an array p1 contains another array p2 within it.
+ *  p1 contains p2 if there is i,j such that p1[i:j] = p2[i:j] for all i<=x<j
+ *  i.e. [1,2,3,4,5] contains [2,3,4] but not [4,5,6] 
+ *
+ * @tparam T template type of the array
+ * @param p1 parent array to test if contains the sub array
+ * @param p2 sub array to test if it is contained within the parent array
+ * @param l1 length of the parent array
+ * @param l2 length of the child array
+ * @return true p1 contains p2
+ * @return false p1 does not contain p2
+ */
+template<typename T>
+bool contains(T* p1, T* p2, size_t l1, size_t l2)
+{
+    // p1 can not contain p2 if it's size is less than p1
+    if(l1 < l2)
     {
-        this->data_.clear();
+        return false;
     }
 
-    size_t size() const {
-        return data_.size();
-    }
+    //TODO
 
-    const T& operator[](size_t index) const {
-        return data_[index];
-    }
-
-    T& operator[](size_t index) {
-        return data_[index];
-    }
-
-private:
-    std::deque<T> data_;
-    size_t max_size_;
-};
+    return true;
+}
 
 
 #endif //ARGUS_UTILS_ARRAY_H

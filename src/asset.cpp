@@ -18,15 +18,18 @@ using namespace std;
 
 using asset_sp_t = Asset::asset_sp_t;
 
-Asset::Asset(string asset_id_, string exchange_id_, string broker_id_, size_t warmup_)              
+Asset::Asset(string asset_id_, string exchange_id_, string broker_id_, size_t warmup_,  AssetFrequency frequency_)              
 {
     this->asset_id = std::move(asset_id_);
     this->exchange_id = std::move(exchange_id_);
     this->broker_id = std::move(broker_id_);
+
     this->rows = 0,
     this->cols = 0,
     this->current_index = warmup_;
+
     this->warmup = warmup_;
+    this->frequency = frequency_;
     this->is_built = false;
 }
 
@@ -399,4 +402,18 @@ void Asset::step(){
 
     //move the current index forward
     this->current_index++; 
+}
+
+void BetaTracer::build()
+{
+    // the parent asset and index asset must have the same frequencies.
+    if(this->parent_asset->frequency != this->index_asset->frequency)
+    {
+        ARGUS_RUNTIME_ERROR("frequencies must be the same");
+    }
+    // make sure the lookback period is not greater than the number of rows loaded
+    if(parent_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
+    {   
+        ARGUS_RUNTIME_ERROR("lookback greater than row count");
+    }
 }
