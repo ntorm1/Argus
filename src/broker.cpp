@@ -52,7 +52,7 @@ void Broker::reset_broker()
 }
 
 
-void Broker::cancel_order(unsigned int order_id)
+void Broker::cancel_order(size_t order_id)
 {
     auto order_opt = unsorted_vector_remove(
         this->open_orders,

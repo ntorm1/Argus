@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import seaborn as sns
 
+os.add_dll_directory("C:\\msys64\\mingw64\\bin")
 sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../lib'))
 
 from Hal import Hal
 import FastTest

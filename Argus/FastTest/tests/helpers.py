@@ -33,7 +33,6 @@ def load_asset(file_path, asset_id, exchange_id, broker_id, is_view=False):
     df = pd.read_csv(file_path)
     df.set_index("DATE", inplace=True)
     df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)
-
     asset = asset_from_df(df, asset_id, exchange_id, broker_id)
 
     return asset

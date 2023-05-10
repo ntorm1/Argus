@@ -113,7 +113,7 @@ class Order
 {
 private:
     /// static trade counter shared by all trade objects
-    static inline unsigned int order_counter = 0;
+    static inline size_t order_counter = 0;
 
     /// type of the order
     OrderType order_type;
@@ -132,7 +132,7 @@ private:
     vector<shared_ptr<Order>> child_orders;
 
     /// unique id of the order
-    unsigned int order_id;
+    size_t order_id;
 
     /// unique id of the trade the order is applied to
     int trade_id;
@@ -174,10 +174,10 @@ public:
     Order(OrderType order_type_, string asset_id_, double units_, string exchange_id_,
           string broker_id_, Portfolio* source_portfolio, string strategy_id_, int trade_id_);
 
-    void cancel_child_order(unsigned int order_id);
+    void cancel_child_order(size_t order_id);
 
     /// get the unique id of the order
-    [[nodiscard]] unsigned int get_order_id() const { return this->order_id; }
+    [[nodiscard]] size_t get_order_id() const { return this->order_id; }
 
     /// get the unique id of the exchange the order was placed to
     [[nodiscard]] string get_exchange_id() const { return this->exchange_id; }
@@ -197,8 +197,8 @@ public:
     /// get the unique trade id of the order
     [[nodiscard]] int get_trade_id() const { return this->trade_id; }
 
-    /// convert trade id unsigned int, map -1 => 0 (base position trade)
-    [[nodiscard]] unsigned int get_unsigned_trade_id() const;
+    /// convert trade id size_t, map -1 => 0 (base position trade)
+    [[nodiscard]] size_t get_unsigned_trade_id() const;
 
     /// get the units in the order
     [[nodiscard]] double get_units() const { return this->units; }
@@ -231,10 +231,10 @@ public:
     inline void set_units(double units_) { this->units = units_;}
 
     // set the unique id of the order (broker sets when it is placed)
-    inline void set_order_id(unsigned int order_id_) {this->order_id = order_id_;}
+    inline void set_order_id(size_t order_id_) {this->order_id = order_id_;}
     
     /// set the trade id of the order
-    inline void set_trade_id(unsigned int trade_id_) { this->trade_id = trade_id_; }
+    inline void set_trade_id(size_t trade_id_) { this->trade_id = trade_id_; }
 
     /// set the order state of the order
     inline void set_order_state(OrderState order_state_) { this->order_state = order_state_; };

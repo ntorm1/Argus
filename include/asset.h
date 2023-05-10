@@ -208,7 +208,7 @@ std::shared_ptr<Asset> new_asset(
 );
 
 /// function for identifying index locations of open and close column
-tuple<::size_t, size_t> parse_headers(const vector<std::string> &columns);
+tuple<size_t, size_t> parse_headers(const vector<std::string> &columns);
 
 class AssetTracer
 {

@@ -22,10 +22,10 @@ using namespace std;
 class Position
 {
 private:
-    static inline unsigned int positition_counter;
+    static inline size_t positition_counter;
 
     /// unique id of the position
-    unsigned int position_id;
+    size_t position_id;
 
     /// unique id of the underlying asset of the position
     string asset_id;
@@ -55,9 +55,9 @@ private:
     long long position_close_time = 0;
 
     /// number of bars the positions has been held for
-    unsigned int bars_held = 0;
+    size_t bars_held = 0;
 
-    tsl::robin_map<unsigned int, shared_ptr<Trade>> trades;
+    tsl::robin_map<size_t, shared_ptr<Trade>> trades;
 
 public:
     /// smart pointer position typedef
@@ -90,7 +90,7 @@ public:
     bool is_open;
 
     /// @brief set the id of a position
-    void set_position_id(unsigned int position_id_){this->position_id = position_id_;}
+    void set_position_id(size_t position_id_){this->position_id = position_id_;}
 
     /// @private
     /// @brief is the position currently open
@@ -110,11 +110,11 @@ public:
 
     ///@brief get the number of trades in the position
     ///@return return the number of trades in the position
-    unsigned int get_trade_count() const {return this->trades.size();}
+    size_t get_trade_count() const {return this->trades.size();}
 
     /// get the id of the position
     /// @return position id
-    [[nodiscard]] unsigned int get_position_id() const { return this->position_id; };
+    [[nodiscard]] size_t get_position_id() const { return this->position_id; };
 
     /// get the average price of the position
     /// @return position's average price
@@ -148,12 +148,12 @@ public:
     [[nodiscard]] long long get_position_close_time() const { return this->position_close_time; };
 
     /// get a smart pointer to child trade
-    std::optional<trade_sp_t> get_trade(unsigned int trade_id);
+    std::optional<trade_sp_t> get_trade(size_t trade_id);
 
     /// @private
     /// get a reference to the hash map containing the underlying trades of the position
     /// \return reference to the hash map containing the underlying trades of the position
-    tsl::robin_map<unsigned int, trade_sp_t> &get_trades() { return this->trades; }
+    tsl::robin_map<size_t, trade_sp_t> &get_trades() { return this->trades; }
 
     /// @brief generate the inverse orders needed to close out a position, (MARKET_ORDERS)
     /// @param ref to vector to hold inverse orders

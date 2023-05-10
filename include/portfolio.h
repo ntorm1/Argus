@@ -4,7 +4,6 @@
 #include <memory>
 #include <string>
 #include <optional>
-#include <sys/_types/_size_t.h>
 #include <tsl/robin_map.h>
 #include <fmt/core.h>
 #include <mutex>
@@ -525,6 +524,5 @@ public:
     vector<shared_ptr<PortfolioTracer>> tracers;
 
 };
-
 
 #endif // ARGUS_PORTFOLIO_H

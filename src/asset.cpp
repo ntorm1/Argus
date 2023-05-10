@@ -1,10 +1,8 @@
-#include <cstddef>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <memory>
 #include <pybind11/stl.h>
-#include <stdexcept>
 #include "algorithm"
 
 #include "asset.h"

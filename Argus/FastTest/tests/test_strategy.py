@@ -4,7 +4,10 @@ import time
 import unittest
 import cProfile
 import numpy as np
+
+os.add_dll_directory("C:\\msys64\\mingw64\\bin")
 sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../lib'))
 
 import Asset
 import FastTest

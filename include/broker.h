@@ -58,7 +58,7 @@ public:
     * 
     * @param order_id unique id of the order to cancel
     */
-    void cancel_order(unsigned int order_id);
+    void cancel_order(size_t order_id);
 
     /**
      * @brief send orders in the open order buffer to their corresponding exchange

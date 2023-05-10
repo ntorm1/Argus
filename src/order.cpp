@@ -127,7 +127,7 @@ void Order::unfill()
     this->order_state = PENDING;
 }
 
-void Order::cancel_child_order(unsigned int order_id_)
+void Order::cancel_child_order(size_t order_id_)
 {
     auto _order = unsorted_vector_remove(
         this->child_orders,
@@ -136,14 +136,14 @@ void Order::cancel_child_order(unsigned int order_id_)
         order_id_);
 }
 
-unsigned int Order::get_unsigned_trade_id() const
+size_t Order::get_unsigned_trade_id() const
 {
     auto trade_id_int = this->trade_id;
     if (trade_id_int == -1)
     {
         trade_id_int++;
     }
-    auto trade_id_uint = static_cast<unsigned int>(trade_id_int);
+    auto trade_id_uint = static_cast<size_t>(trade_id_int);
     return trade_id_int;
 };
 

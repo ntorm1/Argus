@@ -179,7 +179,7 @@ shared_ptr<Trade> Position::adjust_order(order_sp_t filled_order, Portfolio* por
     }
 }
 
-std::optional<trade_sp_t> Position::get_trade(unsigned int trade_id)
+std::optional<trade_sp_t> Position::get_trade(size_t trade_id)
 {
     auto iter = this->trades.find(trade_id);
     if (this->trades.end() == iter)

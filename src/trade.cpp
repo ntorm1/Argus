@@ -13,7 +13,7 @@
 
 using namespace std;
 
-void Trade::cancel_child_order(unsigned int order_id)
+void Trade::cancel_child_order(size_t order_id)
 {
     auto _order = unsorted_vector_remove(
         this->open_orders,

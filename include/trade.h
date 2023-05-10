@@ -28,7 +28,7 @@ public:
     using order_sp_t = Order::order_sp_t;
 
     /// number of bars the positions has been held for
-    unsigned int bars_held;
+    size_t bars_held;
 
     /// trade constructor
     Trade(order_sp_t filled_order, bool dummy = false);
@@ -57,7 +57,7 @@ public:
     void increase(double market_price, double units, long long trade_change_time);
 
     /// remove open order that has been canceled;
-    void cancel_child_order(unsigned int order_id);
+    void cancel_child_order(size_t order_id);
 
     /// get the id of the source portfolio of a trade
     /// @return ref to string of underlying source portfolio id 
@@ -89,7 +89,7 @@ public:
 
     /// get the id of the trade 
     /// @return id of the trade
-    [[nodiscard]] unsigned int get_trade_id() const {return this->trade_id;}
+    [[nodiscard]] size_t get_trade_id() const {return this->trade_id;}
 
     /// get the id of the underlying exchange of the trade
     /// @return ref to string of underlying exchange id 
@@ -131,7 +131,7 @@ public:
 
 private:
     /// static trade counter shared by all trade objects
-    static inline unsigned int trade_counter = 0;
+    static inline size_t trade_counter = 0;
 
     /// is the trade currently open
     bool is_open;
@@ -144,7 +144,7 @@ private:
     Position* source_position;
 
     /// unique id of the trade
-    unsigned int trade_id;
+    size_t trade_id;
 
     /// unique id of the underlying asset of the trade
     string asset_id;
