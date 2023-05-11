@@ -8,9 +8,7 @@
 class Trade;
 class Portfolio;
 
-#include <string>
-#include <vector>
-#include <memory>
+#include "pch.h"
 
 using namespace std;
 

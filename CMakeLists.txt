@@ -27,9 +27,6 @@ find_package(fmt CONFIG REQUIRED)
 #pybind11
 find_package(pybind11 CONFIG REQUIRED)
 
-#robin-map
-find_package(tsl-robin-map REQUIRED)
-
 find_library(GMP_LIBRARY gmp)
 if (GMP_LIBRARY)
     message(STATUS "Found GMP library: ${GMP_LIBRARY}")

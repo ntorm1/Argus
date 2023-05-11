@@ -1,6 +1,4 @@
-#include <iostream>
-#include <memory>
-#include <optional>
+#include "pch.h"
 #include <stdexcept>
 
 #include "asset.h"

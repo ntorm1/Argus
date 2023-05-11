@@ -1,12 +1,10 @@
 //
 // Created by Nathan Tormaschy on 4/18/23.
 //
-#include <algorithm>
+#include "pch.h"
 #include <cstdio>
 #include <cmath>
 #include <execution>
-#include <iostream>
-#include <optional>
 #include <stdexcept>
 
 #include "fmt/core.h"

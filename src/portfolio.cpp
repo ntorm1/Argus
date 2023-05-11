@@ -1,12 +1,9 @@
 #include <cstddef>
 #include <cstdio>
 #include <gmp.h>
-#include <memory>
+#include "pch.h"
 #include <stdexcept>
-#include <string>
-#include <optional>
 #include <fmt/core.h>
-#include <vector>
 
 #include "asset.h"
 #include "exchange.h"

@@ -1,10 +1,7 @@
 #ifndef ARGUS_PORTFOLIO_H
 #define ARGUS_PORTFOLIO_H
 
-#include <memory>
-#include <string>
-#include <optional>
-#include <tsl/robin_map.h>
+#include "pch.h"
 #include <fmt/core.h>
 #include <mutex>
 
@@ -15,7 +12,6 @@ class Broker;
 #include "account.h"
 #include "exchange.h"
 #include "settings.h"
-
 
 class PortfolioHistory;
 class PortfolioTracer;
@@ -37,9 +33,9 @@ public:
     using order_sp_t = Order::order_sp_t;
 
     typedef shared_ptr<Portfolio> portfolio_sp_t;
-    typedef tsl::robin_map<std::string, position_sp_t> positions_map_t;
-    typedef tsl::robin_map<std::string, portfolio_sp_t> portfolios_map_t;
-    typedef shared_ptr<tsl::robin_map<string, shared_ptr<Broker>>> brokers_sp_t;
+    typedef std::unordered_map<std::string, position_sp_t> positions_map_t;
+    typedef std::unordered_map<std::string, portfolio_sp_t> portfolios_map_t;
+    typedef shared_ptr<std::unordered_map<string, shared_ptr<Broker>>> brokers_sp_t;
 
     /// portfolio constructor
     /// @param logging logging level

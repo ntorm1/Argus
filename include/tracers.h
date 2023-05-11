@@ -1,9 +1,7 @@
-#include <algorithm>
-#include <memory.h>
-
+#include "pch.h"
 
 template <typename T, typename TT> 
-shared_ptr<T> gen_get_tracer(vector<shared_ptr<T>> tracer_container, TT tracer_type){
+std::shared_ptr<T> gen_get_tracer(vector<std::shared_ptr<T>> tracer_container, TT tracer_type){
     auto it = std::find_if(
         tracer_container.begin(),
         tracer_container.end(), 

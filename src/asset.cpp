@@ -1,9 +1,5 @@
-#include <iostream>
-#include <optional>
-#include <string>
-#include <memory>
-#include <pybind11/stl.h>
-#include "algorithm"
+#include "pch.h"
+
 
 #include "asset.h"
 #include "containers.h"
@@ -12,6 +8,8 @@
 #include "utils_string.h"
 #include "fmt/core.h"
 #include "pybind11/numpy.h"
+#include <pybind11/stl.h>
+
 
 namespace py = pybind11;
 
@@ -414,6 +412,11 @@ void Asset::step(){
 BetaTracer::BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_) 
         : AssetTracer(parent_asset_), index_asset(index_asset_), lookback(lookback_)
 {
+    // assets must be build for adding tracer
+    if(!parent_asset_->get_is_built() || !index_asset_->get_is_built())
+    {
+        ARGUS_RUNTIME_ERROR("asset's must be built first");
+    }
     this->asset_window = ArrayWindow<double>(
         parent_asset_->get_column_ptr(parent_asset_->close_column),
         parent_asset_->get_cols(),
@@ -442,4 +445,15 @@ void BetaTracer::build()
     {
         ARGUS_RUNTIME_ERROR("market index must contain asset");
     }
+    // build array windows using parent and the index
+    this->asset_window = Argus::ArrayWindow(
+        this->parent_asset->get_row() + this->parent_asset->close_column, 
+        this->parent_asset->get_cols(),
+        this->parent_asset->get_rows_remaining()
+    );
+    this->index_window = Argus::ArrayWindow(
+        this->index_asset->get_row() + this->index_asset->close_column, 
+        this->index_asset->get_cols(),
+        this->index_asset->get_rows_remaining()
+    );
 }

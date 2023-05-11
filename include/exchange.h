@@ -4,10 +4,8 @@
 
 #ifndef ARGUS_EXCHANGE_H
 #define ARGUS_EXCHANGE_H
-#include <string>
-#include <memory>
-#include <utility>
-#include <tsl/robin_map.h>
+#include "pch.h"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
@@ -48,7 +46,7 @@ public:
     Exchange &operator=(Exchange &&) = delete;
 
     /// map between asset id and asset pointer
-    tsl::robin_map<string, asset_sp_t> market;
+    std::unordered_map<string, asset_sp_t> market;
 
     /// total number of rows in the exhange
     size_t candles;
@@ -151,7 +149,7 @@ private:
     string exchange_id;
 
     /// mapping for asset's available at the current moment;
-    tsl::robin_map<string, Asset *> market_view;
+    std::unordered_map<string, Asset *> market_view;
 
     /// container for storing asset_id's that have finished streaming
     vector<asset_sp_t> expired_assets;
@@ -189,7 +187,7 @@ private:
 
 class ExchangeMap{
 public:
-    typedef tsl::robin_map<string, shared_ptr<Exchange>> Exchanges;
+    typedef std::unordered_map<string, shared_ptr<Exchange>> Exchanges;
     typedef shared_ptr<ExchangeMap> exchanges_sp_t;
 
     /// mapping between exchange id and exchange object

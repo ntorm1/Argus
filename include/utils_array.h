@@ -5,10 +5,9 @@
 #ifndef ARGUS_UTILS_ARRAY_H
 #define ARGUS_UTILS_ARRAY_H
 
-#include <optional>
+#include "pch.h"
 #include <queue>
 #include <span>
-#include <memory>
 #include <type_traits>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>

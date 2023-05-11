@@ -5,11 +5,8 @@
 #ifndef ARGUS_ASSET_H
 #define ARGUS_ASSET_H
 #include <cstddef>
-#include <string>
-#include <memory>
-#include <vector>
+#include "pch.h"
 #include <cmath>
-#include <tsl/robin_map.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
@@ -100,6 +97,14 @@ public:
 
     /// return the memory address of the underlying asset opbject
     auto get_mem_address(){return reinterpret_cast<std::uintptr_t>(this); }
+
+    /// @brief get a pointer to the current row of the asset
+    /// @return const pointer to the underlying row data
+    double * get_row() const {return this->row;}
+
+    /// @brief get the number of rows of data remaining for the asset
+    /// @return number of rows remaining, including the current one
+    size_t get_rows_remaining() const{return this->rows - this->current_index - 1;}
     
     /// return the number of rows in the asset
     [[nodiscard]] size_t get_rows() const { return this->rows; }
@@ -177,7 +182,7 @@ private:
     bool is_view = false;
 
     /// map between column name and column index
-    tsl::robin_map<string, size_t> headers;
+    std::unordered_map<string, size_t> headers;
 
     /// datetime index of the asset (ns epoch time stamp)
     long long *datetime_index;

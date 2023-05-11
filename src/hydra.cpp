@@ -3,13 +3,9 @@
 //
 #include <cstddef>
 #include <cstdio>
-#include <iostream>
 #include <stdexcept>
-#include <string>
-#include <memory>
+#include "pch.h"
 #include <fmt/core.h>
-#include <thread>
-#include <vector>
 
 #include "asset.h"
 #include "exchange.h"
