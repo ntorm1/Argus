@@ -616,7 +616,7 @@ void Portfolio::add_sub_portfolio(const string &portfolio_id_, portfolio_sp_t po
     auto iter = this->portfolio_map.find(portfolio_id_);
     if (this->portfolio_map.end() != iter)
     {
-        ARGUS_RUNTIME_ERROR("Portfolio::add_sub_portfolio portfolio already exists");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     this->portfolio_map.insert({portfolio_id, portfolio_});
 
@@ -757,7 +757,7 @@ optional<vector<order_sp_t>> Portfolio::generate_order_inverse(
 
     //make sure we found a position
     if(!position.has_value()){
-        ARGUS_RUNTIME_ERROR("failed to find position");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
 
     //populate inverse orders container
@@ -832,7 +832,7 @@ shared_ptr<Portfolio> Portfolio::find_portfolio(const string &portfolio_id_){
             return found;
         }
     }
-    ARGUS_RUNTIME_ERROR("failed to find portfolio");
+    ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
 };
 
 void Portfolio::add_cash(double cash_)

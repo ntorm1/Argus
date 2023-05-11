@@ -166,30 +166,38 @@ void Exchange::register_index(const asset_sp_t &asset_)
     // exchange must be built before registering a index asset
     if(!this->is_built)
     {
-        ARGUS_RUNTIME_ERROR("exchange must be built first");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
 
     // if index asset is registered then make sure it is valid. It must contain the datetime
     // indexs of each asset listed on the exchange, i.e. equal to the exchange datetime index
     if(asset_->get_rows() != this->datetime_index_length)
     {
-        ARGUS_RUNTIME_ERROR("invalid index passed");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayLength);
     }
 
-    auto dt_index = asset_->get_datetime_index();    
+    auto dt_index = asset_->get_datetime_index(); 
+    bool are_same = true;   
     for(int i = 0; i < this->datetime_index_length; i++)
     {
         if(dt_index[i] != this->datetime_index[i])
         {
-            ARGUS_RUNTIME_ERROR("invalid index passed");
+            are_same = false;
+            break;
         }
     }
 
+    if(!are_same)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayValues);
+    }
+
+    this->index_asset = asset_;
+
     for(auto& asset_pair : this->market)
     {   
-        asset_pair.second->register_index_asset(this->index_asset);
+        asset_pair.second->register_index_asset(this->index_asset.value());
     }
-    this->index_asset = asset_;
 }
 
 void Exchange::register_asset(const shared_ptr<Asset> &asset_)
@@ -215,7 +223,7 @@ py::array_t<long long> Exchange::get_datetime_index_view()
 {
     if (!this->is_built)
     {
-        throw std::runtime_error("exchange is not built");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
     return to_py_array(
         this->datetime_index,
@@ -237,7 +245,7 @@ void Exchange::process_market_order(shared_ptr<Order> &open_order)
     auto market_price = this->get_market_price(open_order->get_asset_id());
     if (market_price == 0)
     {
-        ARGUS_RUNTIME_ERROR("received order for which asset is not currently streaming");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     open_order->fill(market_price, this->exchange_time);
 }
@@ -247,7 +255,7 @@ void Exchange::process_limit_order(shared_ptr<Order> &open_order)
     auto market_price = this->get_market_price(open_order->get_asset_id()); 
     if (market_price == 0)
     {
-        ARGUS_RUNTIME_ERROR("received order for which asset is not currently streaming");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     if ((open_order->get_units() > 0) & (market_price <= open_order->get_limit()))
     {
@@ -264,7 +272,7 @@ void Exchange::process_stop_loss_order(shared_ptr<Order> &open_order)
     auto market_price = this->get_market_price(open_order->get_asset_id());
     if (market_price == 0)
     {
-        ARGUS_RUNTIME_ERROR("received order for which asset is not currently streaming");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     if ((open_order->get_units() < 0) & (market_price <= open_order->get_limit()))
     {
@@ -281,7 +289,7 @@ void Exchange::process_take_profit_order(shared_ptr<Order> &open_order)
     auto market_price = this->get_market_price(open_order->get_asset_id());
     if (market_price == 0)
     {
-        throw std::invalid_argument("received order for which asset is not currently streaming");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     if ((open_order->get_units() < 0) & (market_price >= open_order->get_limit()))
     {
@@ -301,7 +309,7 @@ void Exchange::process_order(shared_ptr<Order> &order)
     // check to see if asset is currently streaming
     if (!asset)
     {   
-        ARGUS_RUNTIME_ERROR(fmt::format("failed to find asset: {} in market view",asset_id));
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
 
     // switch on order type and process accordingly
@@ -402,7 +410,7 @@ void Exchange::goto_datetime(long long datetime)
         }
     }
 
-    throw std::runtime_error("failed to find datetime in exchange goto");    
+    ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidDatetime);
 }
 
 bool Exchange::get_market_view()
@@ -455,6 +463,12 @@ bool Exchange::get_market_view()
         this->market.end(), 
         process_asset);
 
+    // step index asset forward if it exists
+    if(this->index_asset.has_value())
+    {
+        this->index_asset.value()->step();
+    }
+
     // move to next datetime and return true showing the market contains at least one
     // asset that is not done streaming
     this->current_index++;
@@ -482,7 +496,7 @@ py::dict Exchange::get_exchange_feature(
     // -1 means the previous, etc. The row must be valid for all asset's passed. 
     if(row > 0)
     {
-        throw std::runtime_error("row must be less than 0");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
 
     // if N = -1 than set it equal to the market_view, i.e. all asset's streaming.

@@ -104,7 +104,7 @@ asset_sp_t Asset::fork_view()
     // asset must be built in order to be forked
     if(!this->is_built)
     {
-        ARGUS_RUNTIME_ERROR("can't fork asset that is not built");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
 
     auto asset_view = std::make_shared<Asset>(
@@ -214,7 +214,7 @@ void Asset::py_load_data(
 {
     if(headers.size() == 0)
     {   
-        throw std::runtime_error("headers must be loaded before data");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayLength);
     }
 
     py::buffer_info data_info = py_data.request();
@@ -258,7 +258,7 @@ double Asset::get(const std::string &column, size_t row_index) const
     // make sure the row index is valid
     if (row_index >= this->rows)
     {
-        throw out_of_range("row index out of range");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
     return this->data[row_index * this->cols + column_index];
 }
@@ -299,7 +299,7 @@ double Asset::get_asset_feature(const string& column_name, int index)
 
     #ifdef ARGUS_RUNTIME_ASSERT
     if(column_offset == this->headers.end()){
-        throw ARGUS_RUNTIME_ASSERT("missing column");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidDataRequest);
     }
     #endif
 
@@ -312,7 +312,7 @@ py::array_t<double> Asset::get_column(const string& column_name, size_t length)
 {
     if(length >= this->current_index)
     {
-        throw std::runtime_error("index out of bounds");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
 
     auto column_offset = this->headers.find(column_name);
@@ -353,11 +353,13 @@ py::array_t<long long> Asset::get_datetime_index_view()
 {
     if (!this->is_built)
     {
-        throw std::runtime_error("asset is not built");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+
     }
     if (this->rows == 0)
     {
-        throw std::runtime_error("no data to return");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayLength);
+
     }
     return to_py_array(
         this->datetime_index,
@@ -417,38 +419,40 @@ void Asset::step(){
     this->current_index++; 
 }
 
-BetaTracer::BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_) 
-        : AssetTracer(parent_asset_), index_asset(index_asset_), lookback(lookback_)
+BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_) 
+        : AssetTracer(parent_asset_, lookback_)
 {
-    // assets must be build for adding tracer
-    if(!parent_asset_->get_is_built() || !index_asset_->get_is_built())
+    // asset must have a index linked to it 
+    if(!parent_asset_->index_asset.has_value())
     {
-        ARGUS_RUNTIME_ERROR("asset's must be built first");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerAsset);
+    }
+    else
+    {
+        this->index_asset = parent_asset_->index_asset.value().get();
     }
 
     // the parent asset and index asset must have the same frequencies.
     if(this->parent_asset->frequency != this->index_asset->frequency)
     {
-        ARGUS_RUNTIME_ERROR("frequencies must be the same");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidAssetFrequency);
+    }
+
+    // assets must be build for adding tracer
+    if(!parent_asset->get_is_built() || !index_asset->get_is_built())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+
+    // make sure the lookback period is not greater than the number of rows loaded
+    if(parent_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
+    {   
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
 }
 
 void BetaTracer::build()
 {
-
-    // make sure the lookback period is not greater than the number of rows loaded
-    if(index_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
-    {   
-        ARGUS_RUNTIME_ERROR("lookback greater than row count");
-    }
-
-    // make sure the index datetime index contains the asset's datetime index
-    if(!array_contains(index_asset->get_datetime_index(), parent_asset->get_datetime_index(), 
-                 index_asset->get_rows(), parent_asset->get_rows()))
-    {
-        ARGUS_RUNTIME_ERROR("market index must contain asset");
-    }
-
     // if the asset is currently at index greater than lookback then we have enough data to load full
     // window. Else we point window to first row and mark the asset as not fully build yet
     double* start_ptr;
@@ -457,16 +461,14 @@ void BetaTracer::build()
     {   
         start_ptr = parent_asset->get_row() - (lookback * parent_asset->get_cols());
         t0 = parent_asset->get_datetime_index()[parent_asset->current_index - lookback];
-        this->is_built = true;
     }
     else
     {
         start_ptr = parent_asset->get_row() + parent_asset->close_column;
         t0 = parent_asset->get_datetime_index()[0];
-        this->is_built = false;
     }
 
-    // take the datetime of the starting row of the asset and search for it in the 
+    // take the datetime of the starting row of the parent asset and search for it in the 
     // index asset's datetime index. Know it has value because it is contained
     auto index_start = array_find(
         this->index_asset->get_datetime_index(),

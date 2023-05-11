@@ -81,6 +81,9 @@ public:
     /// index of the current row the asset is at
     size_t current_index;
 
+    /// @brief pointer to an index asset
+    optional<asset_sp_t> index_asset = nullopt;
+
     /// @brief vector of tracers registered to the asset
     vector<shared_ptr<AssetTracer>> tracers;
 
@@ -210,9 +213,6 @@ private:
     /// does the asset own the underlying data pointer
     bool is_view = false;
 
-    /// @brief pointer to an index asset
-    asset_sp_t index_asset = nullptr;
-
     /// map between column name and column index
     std::unordered_map<string, size_t> headers;
 
@@ -248,7 +248,8 @@ class AssetTracer
 {
 public:
     /// Asset Tracer constructor 
-    AssetTracer(Asset* parent_asset_) : parent_asset(parent_asset_){};
+    AssetTracer(Asset* parent_asset_, size_t lookback_) : 
+        parent_asset(parent_asset_), lookback(lookback_){};
 
     /// Asset Tracer default destructor 
     virtual ~AssetTracer() = default;
@@ -263,17 +264,20 @@ public:
     virtual void reset() = 0;
 
     // is the tracer ready to be accessed
-    bool is_built;
+    bool is_built(){this->parent_asset->current_index >= this->lookback;};
 
 protected:
     /// pointer to the parent asset of the tracer
     Asset* parent_asset;
+
+    /// lookback period of the tracer
+    size_t lookback;
 };
 
 class BetaTracer : AssetTracer
 {
 public:
-    BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookback_);
+    BetaTracer(Asset* parent_asset_, size_t lookback_);
 
     /// pure virtual function called on parent asset step
     void step() override {}
@@ -287,9 +291,6 @@ public:
 private:
     /// pointer to the index asset
     Asset* index_asset;
-
-    /// lookback period of the beta tracer
-    size_t lookback;
 
     /// parent asset window
     Argus::ArrayWindow<double> asset_window;

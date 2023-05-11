@@ -18,17 +18,47 @@ static double constexpr ARGUS_MP_PORTFOLIO_MAX_LEVERAGE = 1.75;
 #include <stdexcept>
 #include <string>
 
-enum class ErrorCode {
-  Success = 0,
-  FileNotFound = 1,
-  InvalidParameter = 2,
-  AccessDenied = 3
+enum ArgusErrorCode {
+  NotBuilt,
+
+  IndexOutOfBounds,
+  
+  InvalidAssetFrequency,
+  InvalidTracerAsset,
+  InvalidDataRequest,
+  InvalidDatetime,
+  InvalidId,
+  InvalidArrayLength,
+  InvalidArrayValues
 };
+
+static const std::string EnumStrings[] = 
+{
+  "Object is not built",
+
+  "Index Out of Bounds Error",
+
+  "Invalid asset frequency",
+  "Invalid tracer asset passed",
+  "Invalid data request",
+  "Invalid datetime passed",
+  "Invalid id passed"
+  "Invalid array length",
+  "Invalid array values"
+};
+
+
+static const char * EnumStrings[] = { "bananas & monkeys", "Round and orange", "APPLE" };
+
+
 
 class RuntimeError : public std::runtime_error {
 public:
     RuntimeError(const std::string& message, const char* file, int line)
         : std::runtime_error(message + " (" + file + ":" + std::to_string(line) + ")")
+    {}
+    RuntimeError(ArgusErrorCode error_code, const char* file, int line)
+        : std::runtime_error(EnumStrings[error_code] + " (" + file + ":" + std::to_string(line) + ")")
     {}
 };
 

@@ -158,8 +158,12 @@ private:
     /// unique id of the exchange
     string exchange_id;
 
-    /// @brief a smart pointer to the index of the exchange.
-    asset_sp_t index_asset = nullptr;
+    /**
+     * @brief a smart pointer to a asset representing the index of the exchange
+     *  - index asset must have a datetime index equivalent to the exchange and can 
+     *    only be registered once the exchange is built.
+     */
+    optional<asset_sp_t> index_asset = nullopt;
 
     /// mapping for asset's available at the current moment;
     std::unordered_map<string, Asset *> market_view;
