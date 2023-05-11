@@ -63,12 +63,22 @@ public:
     /// build the market view, return false if all assets listed are done streaming
     bool get_market_view();
 
-    /// register an asset on the exchange
+    /// @brief register an asset on the exchange
+    /// @param asset smart pointer to new asset to register
     void register_asset(const asset_sp_t &asset);
+
+    /// @brief register a new index asset for the exchange
+    /// @param index smart pointer to asset reprenting the index
+    void register_index(const asset_sp_t &index);
 
     /// move all assets that have expired out of the market
     void move_expired_assets();
 
+    /**
+     * @brief get a list of asset's that have expired in the current time step
+     *  An asset expires when it reaches the end of it's datetime index
+     * @return optional<vector<asset_sp_t>*> optional pointer to vector of assets, None if no assets expired.
+     */
     optional<vector<asset_sp_t>*> get_expired_assets();
 
     /// process open orders on the exchange
@@ -147,6 +157,9 @@ private:
 
     /// unique id of the exchange
     string exchange_id;
+
+    /// @brief a smart pointer to the index of the exchange.
+    asset_sp_t index_asset = nullptr;
 
     /// mapping for asset's available at the current moment;
     std::unordered_map<string, Asset *> market_view;

@@ -199,7 +199,7 @@ tuple<long long* , int> inline container_sorted_union(
  * @return false p1 does not contain p2
  */
 template<typename T>
-bool contains(T* p1, T* p2, size_t l1, size_t l2)
+bool array_contains(T* p1, T* p2, size_t l1, size_t l2)
 {
     // p1 can not contain p2 if it's size is less than p1
     if(l1 < l2)
@@ -231,6 +231,28 @@ bool contains(T* p1, T* p2, size_t l1, size_t l2)
     }
 
     return true;
+}
+/**
+ * @brief search for element in array and return it's index if found
+ * 
+ * @tparam T type of array to search
+ * @param p1 pointer to first element in the array
+ * @param l1 length of the array
+ * @param element element to search for
+ * @return optional<size_t> nullopt if note found, else the index it is at
+ */
+template<typename T>
+optional<size_t> array_find(T* p1, size_t l1, T element)
+{
+    for(size_t i = 0 ; i < l1; i++)
+    {
+        if(p1[i] == element)
+        {
+            return i;
+        }
+    }
+
+    return nullopt;
 }
 
 #endif //ARGUS_UTILS_ARRAY_H

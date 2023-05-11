@@ -49,6 +49,7 @@ void Exchange::build()
 
     this->candles = 0;
 
+    // build the consolidate exchange datetime index
     auto datetime_index_ = container_sorted_union(
         this->market,
         [](const shared_ptr<Asset> &obj)
@@ -60,7 +61,7 @@ void Exchange::build()
     this->datetime_index_length = get<1>(datetime_index_);
 
     for(auto& asset_pair : this->market){
-        auto asset = asset_pair.second;
+        asset_sp_t asset = asset_pair.second;
         
         // test to see if asset is alligned with the exchage's datetime index
         // makes updating market view faster
@@ -74,6 +75,8 @@ void Exchange::build()
 
         this->candles+= asset->get_rows();
 
+        // build the indivual asset
+        asset->build();
     }
 
     this->is_built = true;
@@ -156,6 +159,37 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
     this->market.emplace(asset_id_, make_shared<Asset>(*asset));
     this->market_view.emplace(asset_id_, nullptr);
     return asset;
+}
+
+void Exchange::register_index(const asset_sp_t &asset_)
+{
+    // exchange must be built before registering a index asset
+    if(!this->is_built)
+    {
+        ARGUS_RUNTIME_ERROR("exchange must be built first");
+    }
+
+    // if index asset is registered then make sure it is valid. It must contain the datetime
+    // indexs of each asset listed on the exchange, i.e. equal to the exchange datetime index
+    if(asset_->get_rows() != this->datetime_index_length)
+    {
+        ARGUS_RUNTIME_ERROR("invalid index passed");
+    }
+
+    auto dt_index = asset_->get_datetime_index();    
+    for(int i = 0; i < this->datetime_index_length; i++)
+    {
+        if(dt_index[i] != this->datetime_index[i])
+        {
+            ARGUS_RUNTIME_ERROR("invalid index passed");
+        }
+    }
+
+    for(auto& asset_pair : this->market)
+    {   
+        asset_pair.second->register_index_asset(this->index_asset);
+    }
+    this->index_asset = asset_;
 }
 
 void Exchange::register_asset(const shared_ptr<Asset> &asset_)

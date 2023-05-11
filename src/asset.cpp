@@ -67,6 +67,14 @@ void Asset::reset_asset()
     this->row = &this->data[this->warmup*this->cols];
 }
 
+void Asset::build()
+{
+    for(auto& tracer : this->tracers)
+    {   
+        tracer->build();
+    }
+}
+
 string Asset::get_asset_id() const
 {
     return this->asset_id;
@@ -417,43 +425,66 @@ BetaTracer::BetaTracer(Asset* parent_asset_, Asset* index_asset_, size_t lookbac
     {
         ARGUS_RUNTIME_ERROR("asset's must be built first");
     }
-    this->asset_window = ArrayWindow<double>(
-        parent_asset_->get_column_ptr(parent_asset_->close_column),
-        parent_asset_->get_cols(),
-        parent_asset_->get_rows());
-    this->index_window = ArrayWindow<double>(
-        index_asset_->get_column_ptr(index_asset_->close_column),
-        index_asset_->get_cols(),
-        index_asset_->get_rows());
-}
 
-void BetaTracer::build()
-{
     // the parent asset and index asset must have the same frequencies.
     if(this->parent_asset->frequency != this->index_asset->frequency)
     {
         ARGUS_RUNTIME_ERROR("frequencies must be the same");
     }
+}
+
+void BetaTracer::build()
+{
+
     // make sure the lookback period is not greater than the number of rows loaded
     if(index_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
     {   
         ARGUS_RUNTIME_ERROR("lookback greater than row count");
     }
+
     // make sure the index datetime index contains the asset's datetime index
-    if(!contains(index_asset->get_datetime_index(), index_asset->get_datetime_index(), 
-                 index_asset->get_rows(), index_asset->get_rows()))
+    if(!array_contains(index_asset->get_datetime_index(), parent_asset->get_datetime_index(), 
+                 index_asset->get_rows(), parent_asset->get_rows()))
     {
         ARGUS_RUNTIME_ERROR("market index must contain asset");
     }
-    // build array windows using parent and the index
-    this->asset_window = Argus::ArrayWindow(
-        this->parent_asset->get_row() + this->parent_asset->close_column, 
-        this->parent_asset->get_cols(),
-        this->parent_asset->get_rows_remaining()
+
+    // if the asset is currently at index greater than lookback then we have enough data to load full
+    // window. Else we point window to first row and mark the asset as not fully build yet
+    double* start_ptr;
+    long long t0;
+    if(parent_asset->current_index >= lookback)
+    {   
+        start_ptr = parent_asset->get_row() - (lookback * parent_asset->get_cols());
+        t0 = parent_asset->get_datetime_index()[parent_asset->current_index - lookback];
+        this->is_built = true;
+    }
+    else
+    {
+        start_ptr = parent_asset->get_row() + parent_asset->close_column;
+        t0 = parent_asset->get_datetime_index()[0];
+        this->is_built = false;
+    }
+
+    // take the datetime of the starting row of the asset and search for it in the 
+    // index asset's datetime index. Know it has value because it is contained
+    auto index_start = array_find(
+        this->index_asset->get_datetime_index(),
+        this->index_asset->get_rows(),
+        t0
     );
-    this->index_window = Argus::ArrayWindow(
-        this->index_asset->get_row() + this->index_asset->close_column, 
-        this->index_asset->get_cols(),
-        this->index_asset->get_rows_remaining()
-    );
+    assert(index_start.has_value());
+
+    // get pointer to the index starting position
+    double* index_start_ptr = this->index_asset->get_data() + (index_start.value()*index_asset->get_cols());
+
+    this->asset_window = ArrayWindow<double>(
+        start_ptr,
+        parent_asset->get_cols(),
+        this->lookback);
+    this->index_window = ArrayWindow<double>(
+        index_start_ptr,
+        index_asset->get_cols(),
+        this->lookback);
+
 }

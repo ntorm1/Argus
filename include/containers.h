@@ -71,7 +71,57 @@ struct ArrayWindow
         );
     }
 
+    struct iterator {
+        T* ptr;
+        size_t stride;
 
+        // Constructor
+        iterator(T* p) : ptr(p) {}
+
+        // Dereference operator
+        T& operator*() const {
+            return *ptr;
+        }
+
+        // Member access operator
+        T* operator->() const {
+            return ptr;
+        }
+
+        // Increment operator (prefix)
+        // Increment operator (prefix)
+        iterator& operator++() {
+            ptr += stride;
+            return *this;
+        }
+
+        // Increment operator (postfix)
+        iterator operator++(int) {
+            iterator temp = *this;
+            ptr += stride;
+            return temp;
+        }
+
+        // Equality operator
+        bool operator==(const iterator& other) const {
+            return ptr == other.ptr;
+        }
+
+        // Inequality operator
+        bool operator!=(const iterator& other) const {
+            return ptr != other.ptr;
+        }
+    };
+
+    // Begin iterator
+    iterator begin() const {
+        return iterator(this->start_ptr, this->stride);
+    }
+
+    // End iterator
+    iterator end() const {
+        return iterator(this->end_ptr,this->stride);
+    }
 };
 
 template <typename T>

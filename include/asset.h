@@ -78,6 +78,12 @@ public:
     /// index of the close column
     size_t close_column;
 
+    /// index of the current row the asset is at
+    size_t current_index;
+
+    /// @brief vector of tracers registered to the asset
+    vector<shared_ptr<AssetTracer>> tracers;
+
     /**
      * @brief fork an asset into a view, the new object will be a new object entirly except for the 
      *        data and datetime index pointers, they will point to this existing object (i.e. no dyn alloc)
@@ -86,8 +92,18 @@ public:
      */
     asset_sp_t fork_view();
 
+    /**
+     * @brief register a new index asset
+     * 
+     * @param index_asset_ smart pointer to linked index asset
+     */
+    void register_index_asset(asset_sp_t index_asset_){this->index_asset = index_asset_;};
+
     /// reset asset to start of data
     void reset_asset();
+
+    /// @brief  build the asset
+    void build();
 
     /// move the asset to an exact point in time
     void goto_datetime(long long datetime);
@@ -117,6 +133,13 @@ public:
 
     /// return pointer to the first element of the datetime index;
     [[nodiscard]] long long *get_datetime_index(bool warmup_start = false) const;
+
+    /**
+     * @brief Get pointer to the asset's underlying data
+     * 
+     * @return double* pointer to first element of the asset's data
+     */
+    double* get_data() {return this->data;};
 
     /// test if the function is built
     [[nodiscard]] bool get_is_built() const;
@@ -169,6 +192,12 @@ public:
      */
     [[nodiscard]] py::array_t<double> get_column(const string& column_name, size_t length);
 
+    /**
+     * @brief Get a pointer to the start of a particular column
+     * 
+     * @param column_index index of the column to get
+     * @return double* pointer to the start of the column
+     */
     double* get_column_ptr(size_t column_index);
 
     /// step the asset forward in time
@@ -180,6 +209,9 @@ private:
 
     /// does the asset own the underlying data pointer
     bool is_view = false;
+
+    /// @brief pointer to an index asset
+    asset_sp_t index_asset = nullptr;
 
     /// map between column name and column index
     std::unordered_map<string, size_t> headers;
@@ -198,9 +230,6 @@ private:
 
     /// number of columns in the asset data
     size_t cols;
-
-    /// index of the current row the asset is at
-    size_t current_index;
 
 };
 
@@ -232,6 +261,9 @@ public:
 
     // pure virtual function to reset the tracer
     virtual void reset() = 0;
+
+    // is the tracer ready to be accessed
+    bool is_built;
 
 protected:
     /// pointer to the parent asset of the tracer
