@@ -10,7 +10,6 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
-#include "utils_array.h"
 #include "containers.h"
 
 namespace py = pybind11;
@@ -21,6 +20,7 @@ class AssetTracer;
 
 enum AssetTracerType
 {
+    Volatility,
     Beta
 };
 
@@ -116,6 +116,21 @@ public:
 
     /// return the memory address of the underlying asset opbject
     auto get_mem_address(){return reinterpret_cast<std::uintptr_t>(this); }
+
+    /**
+     * @brief find an existing tracer registered to the asset
+     * 
+     * @param tracer_type type of tracer to search for
+     * @return optional<shared_ptr<AssetTracer>> nullopt if not exists, else return shared pointer to the tracer
+     */
+    optional<shared_ptr<AssetTracer>> get_tracer(AssetTracerType tracer_type);
+
+    /**
+     * @brief add a new tracer to the asset
+     * 
+     * @param new_tracer shared_ptr to new tracer
+     */
+    void add_tracer(shared_ptr<AssetTracer> new_tracer){this->tracers.push_back(new_tracer);};
 
     /// @brief get a pointer to the current row of the asset
     /// @return const pointer to the underlying row data
@@ -254,6 +269,15 @@ public:
     /// Asset Tracer default destructor 
     virtual ~AssetTracer() = default;
 
+    /**
+     * @brief Get the type of the tracer
+     * 
+     * @return PortfolioTracerType 
+     */
+    virtual AssetTracerType tracer_type() const = 0;
+
+    Argus::ArrayWindow<double> init_array_window();
+
     /// pure virtual function called on parent asset step
     virtual void step() = 0;
 
@@ -264,7 +288,7 @@ public:
     virtual void reset() = 0;
 
     // is the tracer ready to be accessed
-    bool is_built(){this->parent_asset->current_index >= this->lookback;};
+    bool is_built(){return this->parent_asset->current_index >= this->lookback;};
 
 protected:
     /// pointer to the parent asset of the tracer
@@ -274,10 +298,35 @@ protected:
     size_t lookback;
 };
 
+class VolatilityTracer : public AssetTracer
+{
+public:
+    VolatilityTracer(Asset* parent_asset_, size_t lookback_);
+
+    //Type of the tracer
+    AssetTracerType tracer_type() const override {return AssetTracerType::Volatility;}
+
+    /// pure virtual function called on parent asset step
+    void step() override {}
+
+    // pure virtual function to build the tracer
+    void build() override {};
+
+    // pure virtual function to reset the tracer
+    void reset() override {};
+
+private:
+    /// parent asset window
+    Argus::ArrayWindow<double> asset_window;
+};
+
 class BetaTracer : AssetTracer
 {
 public:
     BetaTracer(Asset* parent_asset_, size_t lookback_);
+
+    //Type of the tracer
+    AssetTracerType tracer_type() const override {return AssetTracerType::Beta;}
 
     /// pure virtual function called on parent asset step
     void step() override {}

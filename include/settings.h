@@ -47,11 +47,6 @@ static const std::string EnumStrings[] =
   "Invalid array values"
 };
 
-
-static const char * EnumStrings[] = { "bananas & monkeys", "Round and orange", "APPLE" };
-
-
-
 class RuntimeError : public std::runtime_error {
 public:
     RuntimeError(const std::string& message, const char* file, int line)

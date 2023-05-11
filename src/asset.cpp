@@ -419,6 +419,38 @@ void Asset::step(){
     this->current_index++; 
 }
 
+optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type){
+    auto tracer = vector_get(
+        this->tracers,
+        [tracer_type](auto tracer) { return tracer->tracer_type() == tracer_type; }
+    );
+    return tracer;
+};
+
+ArrayWindow<double> AssetTracer::init_array_window()
+{
+    double* start_ptr;
+    size_t start_index;
+    if(this->parent_asset->current_index >= this->lookback)
+    {   
+        start_ptr = this->parent_asset->get_row() - (this->lookback * this->parent_asset->get_cols());
+        start_index = parent_asset->current_index - lookback;
+    }
+    else
+    {
+        start_ptr = parent_asset->get_row() + parent_asset->close_column;
+        start_index = 0;
+    }
+
+    auto array_window = ArrayWindow<double>(
+        start_ptr,
+        parent_asset->get_cols(),
+        this->lookback
+    );
+    array_window.start_ptr_index = start_index;
+    return array_window;
+}
+
 BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_) 
         : AssetTracer(parent_asset_, lookback_)
 {
@@ -451,22 +483,23 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     }
 }
 
-void BetaTracer::build()
+VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_) 
+        : AssetTracer(parent_asset_, lookback_)
 {
-    // if the asset is currently at index greater than lookback then we have enough data to load full
-    // window. Else we point window to first row and mark the asset as not fully build yet
-    double* start_ptr;
-    long long t0;
-    if(parent_asset->current_index >= lookback)
+    // make sure the lookback period is not greater than the number of rows loaded
+    if(parent_asset->get_rows() < lookback)
     {   
-        start_ptr = parent_asset->get_row() - (lookback * parent_asset->get_cols());
-        t0 = parent_asset->get_datetime_index()[parent_asset->current_index - lookback];
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
-    else
-    {
-        start_ptr = parent_asset->get_row() + parent_asset->close_column;
-        t0 = parent_asset->get_datetime_index()[0];
-    }
+
+    this->asset_window = AssetTracer::init_array_window();
+}
+
+void BetaTracer::build()
+{   
+    // build the parent asset window
+    this->asset_window = AssetTracer::init_array_window();
+    auto t0 = this->parent_asset->get_datetime_index()[this->asset_window.start_ptr_index];
 
     // take the datetime of the starting row of the parent asset and search for it in the 
     // index asset's datetime index. Know it has value because it is contained
@@ -480,13 +513,23 @@ void BetaTracer::build()
     // get pointer to the index starting position
     double* index_start_ptr = this->index_asset->get_data() + (index_start.value()*index_asset->get_cols());
 
-    this->asset_window = ArrayWindow<double>(
-        start_ptr,
-        parent_asset->get_cols(),
-        this->lookback);
+    // build the window into the index asset
     this->index_window = ArrayWindow<double>(
         index_start_ptr,
         index_asset->get_cols(),
-        this->lookback);
+        this->lookback
+    );
+
+    // add volatility tracer to index if not exists
+    auto index_vol_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility);
+    if(!index_vol_tracer.has_value())
+    {
+        shared_ptr<VolatilityTracer> tracer = std::make_shared<VolatilityTracer>(this->parent_asset, this->lookback); 
+        this->parent_asset->add_tracer(tracer); 
+    }
+    else
+    {
+        
+    }
 
 }

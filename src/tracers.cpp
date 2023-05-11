@@ -45,14 +45,13 @@ void PortfolioHistory::add_tracer(PortfolioTracerType tracer_type)
 }
 
 shared_ptr<PortfolioTracer> PortfolioHistory::get_tracer(PortfolioTracerType tracer_type){
-    auto it = std::find_if(
-        this->tracers.begin(),
-        this->tracers.end(), 
-            [tracer_type](auto tracer) { return tracer->tracer_type() == tracer_type; });
-    
-    if(it != this->tracers.end())
+    auto tracer = vector_get(
+        this->tracers,
+        [tracer_type](auto tracer) { return tracer->tracer_type() == tracer_type; }
+    );
+    if(tracer.has_value())
     {
-        return *it;
+        return tracer.value();
     }
     else
     {

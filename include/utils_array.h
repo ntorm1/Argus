@@ -255,5 +255,24 @@ optional<size_t> array_find(T* p1, size_t l1, T element)
     return nullopt;
 }
 
+template<typename T, typename Func>
+optional<T> vector_get(vector<T> &vec, Func func)
+{
+    // func must take type T and return bool as to wether it is the item to remove
+    static_assert(std::is_invocable_r<bool, Func, T>::value, "Func must take parameter of type T and return type bool.");
+    
+    auto it = std::find_if(
+        vec.begin(),
+        vec.end(),
+         func);
+
+    if(it == vec.end())
+    {
+        // item is not found
+        return nullopt;
+    }
+    return *it;
+}
+
 #endif //ARGUS_UTILS_ARRAY_H
 

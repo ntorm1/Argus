@@ -4,6 +4,7 @@
 #include <queue>
 
 #include "pybind11/numpy.h"
+#include "asset.h"
 #include "utils_array.h"
 
 namespace py = pybind11;
@@ -13,20 +14,20 @@ namespace Argus{
 template <typename T>
 struct ArrayWindow
 {
-    /// pointer to the start the array
+    /// @brief pointer to the start the array
     T* start_ptr;
 
-    /// pointer to the end of the array
+    /// @brief pointer to the end of the array
     T* end_ptr;
 
-    /// stride of the array 
+    /// @brief stride of the array 
     size_t stride;
 
-    /// number of elements in the array window 
+    /// @brief number of elements in the array window 
     size_t length;
 
-    /// latest value to be popped off of  the end
-    T popped_element;
+    /// @brief index location of the start pointer
+    size_t start_ptr_index;
 
     ArrayWindow() = default;
     ArrayWindow(T* start_ptr, size_t stride, size_t length)
