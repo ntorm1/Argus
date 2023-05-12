@@ -34,6 +34,7 @@ enum ArgusErrorCode {
 
 static const std::string EnumStrings[] = 
 {
+  "Not implemented"
   "Object is not built",
 
   "Index Out of Bounds Error",

@@ -1,6 +1,6 @@
 #include "pch.h"
 
-
+#include <cmath>
 #include "asset.h"
 #include "containers.h"
 #include "settings.h"
@@ -412,11 +412,20 @@ std::shared_ptr<Asset> new_asset(
 }
 
 void Asset::step(){
-    //move the row pointer forward to the next row
+    // move the row pointer forward to the next row
     this->row += this->cols;
 
-    //move the current index forward
+    // move the current index forward
     this->current_index++; 
+
+    // move any tracers forward
+    if(this->tracers.size())
+    {
+        for(auto& tracer : this->tracers)
+        {
+            tracer->step();
+        }
+    }
 }
 
 optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type){
@@ -427,27 +436,38 @@ optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type)
     return tracer;
 };
 
-ArrayWindow<double> AssetTracer::init_array_window()
+ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
 {
     double* start_ptr;
     size_t start_index;
-    if(this->parent_asset->current_index >= this->lookback)
+    if(asset->current_index >= lookback)
     {   
-        start_ptr = this->parent_asset->get_row() - (this->lookback * this->parent_asset->get_cols());
-        start_index = parent_asset->current_index - lookback;
+        start_ptr = asset->get_row() - (lookback * asset->get_cols());
+        start_index = asset->current_index - lookback;
     }
     else
     {
-        start_ptr = parent_asset->get_row() + parent_asset->close_column;
+        start_ptr = asset->get_row() + asset->close_column;
         start_index = 0;
     }
 
     auto array_window = ArrayWindow<double>(
         start_ptr,
-        parent_asset->get_cols(),
-        this->lookback
+        asset->get_cols(),
+        lookback
     );
+    // set the start pointer index based on what row window start pointer is pointing to
     array_window.start_ptr_index = start_index;
+
+    // if the start index is not 0 then the window is fully populated
+    if(!start_index)
+    {
+        array_window.rows_needed = 0;
+    }
+    else
+    {
+        array_window.rows_needed = lookback - asset->current_index;
+    }
     return array_window;
 }
 
@@ -481,24 +501,10 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     {   
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
-}
+    
+    this->asset_window =  init_array_window(parent_asset_, lookback);
 
-VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_) 
-        : AssetTracer(parent_asset_, lookback_)
-{
-    // make sure the lookback period is not greater than the number of rows loaded
-    if(parent_asset->get_rows() < lookback)
-    {   
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
-    }
-
-    this->asset_window = AssetTracer::init_array_window();
-}
-
-void BetaTracer::build()
-{   
     // build the parent asset window
-    this->asset_window = AssetTracer::init_array_window();
     auto t0 = this->parent_asset->get_datetime_index()[this->asset_window.start_ptr_index];
 
     // take the datetime of the starting row of the parent asset and search for it in the 
@@ -520,16 +526,98 @@ void BetaTracer::build()
         this->lookback
     );
 
-    // add volatility tracer to index if not exists
+    //TODO
     auto index_vol_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility);
     if(!index_vol_tracer.has_value())
     {
-        shared_ptr<VolatilityTracer> tracer = std::make_shared<VolatilityTracer>(this->parent_asset, this->lookback); 
-        this->parent_asset->add_tracer(tracer); 
+        //shared_ptr<VolatilityTracer> tracer = std::make_shared<VolatilityTracer>(this->parent_asset, this->lookback); 
+        //this->index_volatility = &index_vol_tracer.value()->volatility;
     }
     else
     {
         
     }
 
+}
+
+VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 
+        : AssetTracer(parent_asset_, lookback_)
+{
+    // make sure the lookback period is not greater than the number of rows loaded
+    if(parent_asset->get_rows() < lookback)
+    {   
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
+    }
+    // if the asset hasn't been built yet, allow for lookback to adjust the warmup needed for the asset
+    if(!parent_asset->get_is_built() && adjust_warmup)
+    {
+        if(lookback_ > parent_asset_->warmup)
+        {
+            parent_asset_->warmup = lookback_;
+        }   
+    }
+
+    // build the asset window
+    this->asset_window = init_array_window(parent_asset_, lookback);
+
+    // volatility calculations given the passed data
+    double previous;
+    int i = 0;
+    for(auto it = this->asset_window.begin(); it != this->asset_window.end(); it++)
+    {
+        if(i = 0)
+        {
+            previous = *it;
+        }
+        else
+        {
+            auto pct_change = (*it - previous) / previous;
+            this->sum += pct_change;
+            this->sum_sqaures += pow(pct_change, 2);
+            previous = *it;
+        }
+        i++;
+    }
+
+    this->mean = this->sum / i;
+
+    // if the window is fully loaded set the volatility
+    if(parent_asset_->current_index >= lookback)
+    {
+        this->volatility = (this->sum_sqaures / this->lookback) - pow(this->mean, 2);
+    }
+}
+
+void VolatilityTracer::step()
+{
+    // asset not fully loaded
+    if(!this->asset_window.rows_needed)
+    {
+        // get the last value about to be popped off 
+        double old_value = *this->asset_window.start_ptr;
+
+        //move ptrs forward
+        this->asset_window.step();
+
+        // calculate pct change
+        double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
+        double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
+
+        this->sum -= old_value + *this->asset_window.end_ptr;
+        this->sum_sqaures -= pow(old_value,2) + pow(new_value,2);
+        this->mean = this->sum / this->lookback;
+        this->volatility = (this->sum_sqaures / this->lookback) -  pow(this->mean,2);
+    }
+    // still accumulating values
+    else
+    {
+        this->asset_window.step();
+
+        double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
+        double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
+
+        this->sum += new_value;
+        this->sum_sqaures += pow(new_value, 2);
+        this->asset_window.rows_needed--;
+    }
 }

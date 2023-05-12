@@ -29,6 +29,9 @@ struct ArrayWindow
     /// @brief index location of the start pointer
     size_t start_ptr_index;
 
+    /// @brief number of rows needed to be fully loaded
+    int rows_needed;
+
     ArrayWindow() = default;
     ArrayWindow(T* start_ptr, size_t stride, size_t length)
     {
@@ -44,10 +47,6 @@ struct ArrayWindow
      */
     inline void step()
     {   
-        // store the last element to be popped off
-        this->popped_element = *this->start_ptr;
-
-        // step the pointer forward
         this->start_ptr++;
         this->end_ptr++;
     }
@@ -77,7 +76,7 @@ struct ArrayWindow
         size_t stride;
 
         // Constructor
-        iterator(T* p) : ptr(p) {}
+        iterator(T* p, size_t stride_) : ptr(p), stride(stride_) {}
 
         // Dereference operator
         T& operator*() const {

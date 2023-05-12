@@ -276,8 +276,6 @@ public:
      */
     virtual AssetTracerType tracer_type() const = 0;
 
-    Argus::ArrayWindow<double> init_array_window();
-
     /// pure virtual function called on parent asset step
     virtual void step() = 0;
 
@@ -301,19 +299,24 @@ protected:
 class VolatilityTracer : public AssetTracer
 {
 public:
-    VolatilityTracer(Asset* parent_asset_, size_t lookback_);
+    VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup = false);
 
     //Type of the tracer
     AssetTracerType tracer_type() const override {return AssetTracerType::Volatility;}
 
     /// pure virtual function called on parent asset step
-    void step() override {}
+    void step() override;
 
     // pure virtual function to build the tracer
     void build() override {};
 
     // pure virtual function to reset the tracer
     void reset() override {};
+
+    double volatility = 0;
+    double sum_sqaures = 0.0;
+    double sum = 0.0 ;
+    double mean = 0;
 
 private:
     /// parent asset window
@@ -332,7 +335,7 @@ public:
     void step() override {}
 
     // pure virtual function to build the tracer
-    void build() override;
+    void build() override {};
 
     // pure virtual function to reset the tracer
     void reset() override {};
@@ -340,6 +343,9 @@ public:
 private:
     /// pointer to the index asset
     Asset* index_asset;
+
+    /// pointer to the index volatility
+    double* index_volatility;
 
     /// parent asset window
     Argus::ArrayWindow<double> asset_window;
