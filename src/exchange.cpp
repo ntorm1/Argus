@@ -156,7 +156,7 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
         throw runtime_error("asset already exists");
     }
     auto asset = make_shared<Asset>(asset_id_, this->exchange_id, broker_id);
-    this->market.emplace(asset_id_, make_shared<Asset>(*asset));
+    this->market.emplace(asset_id_, asset);
     this->market_view.emplace(asset_id_, nullptr);
     return asset;
 }

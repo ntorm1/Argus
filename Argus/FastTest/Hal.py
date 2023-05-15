@@ -73,7 +73,10 @@ class Hal:
                 raise RuntimeError(f"strategy must implement {attr}()")
             
         if strategy_id in self.strategies.keys():
-            raise RuntimeError("strategy id already exists")
+            if not replace_if_exists:
+                raise RuntimeError("strategy id already exists")
+            else:
+                self.strategies[strategy_id] = py_strategy
         
         strategy = self.hydra.new_strategy(strategy_id, replace_if_exists)
         strategy.on_open = py_strategy.on_open

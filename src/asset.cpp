@@ -590,34 +590,29 @@ VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool 
 
 void VolatilityTracer::step()
 {
+    // calculate pct change
+    double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
+    double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
+
+    // get the last value about to be popped off 
+    double old_value = *this->asset_window.start_ptr;
+
+    //move ptrs forward
+    this->asset_window.step();
+    this->sum += new_value;
+    this->sum_sqaures += pow(new_value, 2);
+
     // asset not fully loaded
     if(!this->asset_window.rows_needed)
     {
-        // get the last value about to be popped off 
-        double old_value = *this->asset_window.start_ptr;
-
-        //move ptrs forward
-        this->asset_window.step();
-
-        // calculate pct change
-        double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
-        double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
-
-        this->sum -= old_value + *this->asset_window.end_ptr;
-        this->sum_sqaures -= pow(old_value,2) + pow(new_value,2);
+        this->sum -= old_value;
+        this->sum_sqaures -= pow(old_value,2);
         this->mean = this->sum / this->lookback;
         this->volatility = (this->sum_sqaures / this->lookback) -  pow(this->mean,2);
     }
     // still accumulating values
     else
-    {
-        this->asset_window.step();
-
-        double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
-        double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
-
-        this->sum += new_value;
-        this->sum_sqaures += pow(new_value, 2);
+    {        
         this->asset_window.rows_needed--;
     }
 }

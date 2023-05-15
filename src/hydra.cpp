@@ -599,7 +599,7 @@ void Hydra::run(long long to, size_t steps){
     // make sure the hydra was already been built
     if(!this->is_built)
     {
-        throw std::runtime_error("hydra not built");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
     if(this->logging)
     {

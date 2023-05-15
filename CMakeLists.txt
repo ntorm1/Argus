@@ -1,3 +1,4 @@
+#dir -Recurse -Include *.h,*.cpp,*.py | Get-Content | Measure-Object -Line  
 # CMakeList.txt : CMake project for FastTest, include source and define
 # project specific logic here.
 #
