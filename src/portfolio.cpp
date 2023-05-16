@@ -321,7 +321,7 @@ void Portfolio::on_order_fill(order_sp_t filled_order)
             return;
         }
         // filled order is not closing existing position
-        else if (position_units + filled_order->get_units() > 1e-7)
+        else if (abs(position_units + filled_order->get_units()) > 1e-7)
         {
             this->modify_position(filled_order);
         }
@@ -420,7 +420,7 @@ void Portfolio::close_position(shared_ptr<Order> filled_order)
     auto position = this->get_position(asset_id).value();
 
     #ifdef ARGUS_RUNTIME_ASSERT
-    assert(position->get_units() + filled_order->get_units() < 1e-7);
+    assert(abs(position->get_units() + filled_order->get_units()) < 1e-7);
     #endif 
 
     position->close(

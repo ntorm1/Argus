@@ -162,9 +162,7 @@ shared_ptr<Trade> Position::adjust_order(order_sp_t filled_order, Portfolio* por
         auto trade_iter = this->trades.find(filled_order->get_trade_id());
         if(trade_iter == this->trades.end())
         {
-            ARGUS_RUNTIME_ERROR(
-                fmt::format("failed to find trade id: {} in trades\n",filled_order->get_trade_id())
-            );
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
         }
         auto trade = trade_iter->second;
         trade->adjust(filled_order);

@@ -153,7 +153,7 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
 {
     if (this->market.count(asset_id_))
     {
-        throw runtime_error("asset already exists");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
     auto asset = make_shared<Asset>(asset_id_, this->exchange_id, broker_id);
     this->market.emplace(asset_id_, asset);

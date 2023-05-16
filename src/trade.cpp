@@ -66,7 +66,7 @@ void Trade::adjust(shared_ptr<Order> filled_order)
     auto fill_time_ = filled_order->get_fill_time();
 
     // decided to close, increase, or reduce the trade
-    if (units_ + this->units < 1e-8)
+    if (abs(units_ + this->units) < 1e-8)
     {
         this->close(fill_price_, fill_time_);
     }
