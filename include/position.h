@@ -93,6 +93,13 @@ public:
     /// @brief set the id of a position
     void set_position_id(size_t position_id_){this->position_id = position_id_;}
 
+    /**
+     * @brief Set the last price the position was evaluated at
+     * 
+     * @param last_price_ the last price the position was evaluated at
+     */
+    void set_last_price(double last_price_){this->last_price = last_price_;}
+
     /// @private
     /// @brief is the position currently open
     /// @brief set the wether the position is open

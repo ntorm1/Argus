@@ -337,8 +337,8 @@ void Portfolio::on_order_fill(order_sp_t filled_order)
     // place child orders from the filled order
     for (auto &child_order : filled_order->get_child_orders())
     {
-        auto broker = this->brokers->at(child_order->get_broker_id());
-        broker->place_order(child_order);
+        auto broker = this->brokers->find(child_order->get_broker_id());
+        broker->second->place_order(child_order);
     }
 };
 
@@ -714,6 +714,9 @@ void Portfolio::evaluate(bool on_close)
             auto unrealized_pl_new = trade->get_units() * (market_price - trade->get_average_price());
             source_portfolio->unrealized_adjust(unrealized_pl_new - trade->get_unrealized_pl());
             source_position->unrealized_adjust(unrealized_pl_new - trade->get_unrealized_pl());
+            
+            //update source position values
+            source_position->set_last_price(market_price);
 
             //update trade values to new evaluations
             trade->set_unrealized_pl(unrealized_pl_new);
