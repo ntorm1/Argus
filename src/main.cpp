@@ -31,11 +31,12 @@ void init_asset_ext(py::module &m)
         .def("get", &Asset::get)
         .def("get_mem_address", &Asset::get_mem_address)
         .def("get_column", &Asset::get_column)
-
-        //.def("mem_address", []()
         .def("get_datetime_index_view",
              &Asset::get_datetime_index_view,
-             py::return_value_policy::reference);
+             py::return_value_policy::reference)
+
+        .def("add_tracer", &Asset::add_tracer);
+
 
     m.def("new_asset", &new_asset, py::return_value_policy::reference,
             py::arg("asset_id"),

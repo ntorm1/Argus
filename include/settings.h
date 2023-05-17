@@ -19,6 +19,7 @@ static double constexpr ARGUS_MP_PORTFOLIO_MAX_LEVERAGE = 1.75;
 #include <string>
 
 enum ArgusErrorCode {
+  NotImplemented,
   NotBuilt,
 
   IndexOutOfBounds,

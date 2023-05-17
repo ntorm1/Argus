@@ -406,11 +406,6 @@ void Portfolio::modify_position(shared_ptr<Order> filled_order)
     // adjust cash for modifying position
     auto amount = gmp_mult(order_units, order_fill_price);
     gmp_sub_assign(this->cash, amount);
-
-    //auto diff = gmp_sub(order_fill_price, position->average_price);
-    //amount = gmp_mult(diff, order_units);
-
-    //this->nlv_adjust(amount);
 }
 
 void Portfolio::close_position(shared_ptr<Order> filled_order)

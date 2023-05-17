@@ -75,6 +75,18 @@ void Asset::build()
     }
 }
 
+void Asset::set_warmup(size_t warmup_)
+{
+    if(!this->is_built)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+    // move the asset forward forward #warmup rows 
+    this->warmup = warmup_;
+    this->current_index = warmup_;
+    this->row = &this->data[warmup * this->cols];
+}
+
 string Asset::get_asset_id() const
 {
     return this->asset_id;
@@ -436,10 +448,23 @@ optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type)
     return tracer;
 };
 
+void Asset::add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup)
+{
+    switch (tracer_type)
+    {
+    case AssetTracerType::Volatility:
+        this->tracers.push_back( std::make_shared<VolatilityTracer>(this, lookback, adjust_warmup));
+    default:
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotImplemented);
+    }
+}
+
 ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
 {
     double* start_ptr;
     size_t start_index;
+    // if the asset's current index is greater than the lookback we have all the data we need
+    // so set the start pointer to the current row minus lookback rows.
     if(asset->current_index >= lookback)
     {   
         start_ptr = asset->get_row() - (lookback * asset->get_cols());
@@ -551,9 +576,9 @@ VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool 
     // if the asset hasn't been built yet, allow for lookback to adjust the warmup needed for the asset
     if(!parent_asset->get_is_built() && adjust_warmup)
     {
-        if(lookback_ > parent_asset_->warmup)
+        if(lookback_ > parent_asset_->get_warmup())
         {
-            parent_asset_->warmup = lookback_;
+            parent_asset_->set_warmup(lookback_);
         }   
     }
 

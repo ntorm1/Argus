@@ -55,7 +55,7 @@ void Exchange::build()
         [](const shared_ptr<Asset> &obj)
         { return obj->get_datetime_index(true); },
         [](const shared_ptr<Asset> &obj)
-        { return obj->get_rows() - obj->warmup; });
+        { return obj->get_rows() - obj->get_warmup(); });
 
     this->datetime_index = get<0>(datetime_index_);
     this->datetime_index_length = get<1>(datetime_index_);

@@ -55,30 +55,28 @@ public:
     /// asset destructor
     ~Asset();
 
+    /// @brief the frequency of the asset rows (1D, 1H, etc..)
     AssetFrequency frequency;
 
-    /// unique id of the asset
+    /// @brief unique id of the asset
     string asset_id;
 
-    /// unique id of the exchange the asset is on
+    /// @brief unique id of the exchange the asset is on
     string exchange_id;
 
-    /// unique id of the broker the asset is listed on 
+    /// @brief unique id of the broker the asset is listed on 
     string broker_id;
 
-    /// is the asset's datetime index alligend with it's exchange
+    /// @brief is the asset's datetime index alligend with it's exchange
     bool is_alligned;
 
-    /// warmup period, i.e. number of rows to skip
-    size_t warmup = 0;
-
-    /// index of the open column;
+    /// @brief index of the open column;
     size_t open_column;
 
-    /// index of the close column
+    /// @brief index of the close column
     size_t close_column;
 
-    /// index of the current row the asset is at
+    /// @brief index of the current row the asset is at
     size_t current_index;
 
     /// @brief pointer to an index asset
@@ -108,13 +106,27 @@ public:
     /// @brief  build the asset
     void build();
 
-    /// move the asset to an exact point in time
+    /**
+     * @brief move the asset to an exact point in time
+     * 
+     * @param datetime ns epoch time to move the asset to
+     */
     void goto_datetime(long long datetime);
     
-    /// is the the last row in the asset
+    /**
+     * @brief is the asset done streaming, occurs when the exchange get_market_view steps the asset forward
+     * to the last step
+     * 
+     * @return true asset is done streaming
+     * @return false asset is still streaming
+     */
     bool is_last_view() {return this->current_index == this->rows;};
 
-    /// return the memory address of the underlying asset opbject
+    /**
+     * @brief returns the memory address of the asset (used for testing)
+     * 
+     * @return uintptr pointer to the memory address of this asset
+     */
     auto get_mem_address(){return reinterpret_cast<std::uintptr_t>(this); }
 
     /**
@@ -126,11 +138,12 @@ public:
     optional<shared_ptr<AssetTracer>> get_tracer(AssetTracerType tracer_type);
 
     /**
-     * @brief add a new tracer to the asset
+     * @brief build and add a new tracer object to the asset
      * 
-     * @param new_tracer shared_ptr to new tracer
+     * @param tracer_type type of tracer to add
+     * @param lookback    lookback of the tracer
      */
-    void add_tracer(shared_ptr<AssetTracer> new_tracer){this->tracers.push_back(new_tracer);};
+    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup);
 
     /// @brief get a pointer to the current row of the asset
     /// @return const pointer to the underlying row data
@@ -162,14 +175,35 @@ public:
     /// test if the function is built
     [[nodiscard]] bool get_is_built() const;
 
-    /// load in the headers of an asset from python list
+    /**
+     * @brief load in the headers from a vector of strings and assign them size_t indexs
+     * 
+     * @param headers a reference of a vector of strings representing the column names of the data
+     */
     void load_headers(const vector<string> &headers);
 
-    /// load the asset data in from a pointer, copy to dynamically allocated double**
+    /**
+     * @brief load in the data from a a column major array of values and datetime index
+     * 
+     * @param data              pointer to the start of the data
+     * @param datetime_index    pointer to the start of the datetime index
+     * @param rows              number of rows in the data
+     * @param cols              number of columns in the data
+     */
     void load_data(const double *data, const long long *datetime_index, size_t rows, size_t cols);
+    
+    // NOTE: only for test use
     void load_view(double *data, long long *datetime_index, size_t rows, size_t cols);
 
-    /// load the asset data using a python buffer
+    /**
+     * @brief load in data from python using numpy array interface
+     * 
+     * @param data              a py buffer object holding a column major numpy array of the asset's values
+     * @param datetime_index    a py buffer object olding the datetime index of the asset
+     * @param rows              number of rows in the asset
+     * @param cols              number of columns in the asset
+     * @param is_view           is_view leads to 0 copy asset creation (test use only, very bad performance)
+     */
     void py_load_data(
         const py::buffer &data, 
         const py::buffer &datetime_index, 
@@ -191,6 +225,8 @@ public:
 
     /// get read only numpy array of the asset's datetime index
     py::array_t<long long> get_datetime_index_view();
+
+    size_t get_warmup(){return this->warmup;}
 
     /**
      * @brief Get specific data point from asset object
@@ -218,33 +254,43 @@ public:
      */
     double* get_column_ptr(size_t column_index);
 
+    /**
+     * @brief Set the warmup of the asset object, moves the row pointer to index so data must be loaded already
+     * 
+     * @param warmup number of rows to skip in warmup period
+     */
+    void set_warmup(size_t warmup);
+
     /// step the asset forward in time
     void step();
 
 private:
-    /// has the asset been built
+    /// @brief has the asset been built
     bool is_built = false;
 
-    /// does the asset own the underlying data pointer
+    /// @brief does the asset own the underlying data pointer
     bool is_view = false;
 
-    /// map between column name and column index
+    /// @brief map between column name and column index
     std::unordered_map<string, size_t> headers;
 
-    /// datetime index of the asset (ns epoch time stamp)
+    /// @brief index of the asset (ns epoch time stamp)
     long long *datetime_index;
 
-    /// underlying data of the asset
+    /// @brief underlying data of the asset
     double * data;
 
     /// @brief pointer to the current row
     double * row;
 
-    /// number of rows in the asset data
+    /// @brief number of rows in the asset data
     size_t rows;
 
-    /// number of columns in the asset data
+    /// @brief number of columns in the asset data
     size_t cols;
+
+    /// @brief warmup period, i.e. number of rows to skip
+    size_t warmup = 0;
 
 };
 
@@ -289,10 +335,10 @@ public:
     bool is_built(){return this->parent_asset->current_index >= this->lookback;};
 
 protected:
-    /// pointer to the parent asset of the tracer
+    /// @brief pointer to the parent asset of the tracer
     Asset* parent_asset;
 
-    /// lookback period of the tracer
+    /// @brief size of the lookback window of tracer
     size_t lookback;
 };
 
@@ -319,7 +365,7 @@ public:
     double mean = 0;
 
 private:
-    /// parent asset window
+    /// @brief array window into the asset's close column
     Argus::ArrayWindow<double> asset_window;
 };
 
