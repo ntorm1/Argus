@@ -14,14 +14,11 @@ import helpers
 
 class PortfolioTestMethods(unittest.TestCase):
     def test_mp_new_portfolio(self):
-        print("test_mp_new_portfolio running...")
         hydra = FastTest.new_hydra(0)
         portfolio = hydra.new_portfolio("test_portfolio",100.0);
-        print("test_mp_new_portfolio passed...")
         assert(True)
         
     def test_sub_portfolio_create(self):
-        print("test_sub_portfolio_create running...")
         hydra = FastTest.new_hydra(1)
         
         portfolio1 = hydra.new_portfolio("test_portfolio1",100.0);
@@ -40,11 +37,8 @@ class PortfolioTestMethods(unittest.TestCase):
         portfolio3_search_1 = portfolio1.find_portfolio("test_portfolio3");
         
         assert(portfolio3.get_mem_address() == portfolio3_search_mp.get_mem_address() == portfolio3_search_1.get_mem_address())
-        print("test_sub_portfolio_create passed...")
 
     def test_portfolio_order_prop(self):
-        print("test_portfolio_order_prop running...")
-
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
         
@@ -85,11 +79,7 @@ class PortfolioTestMethods(unittest.TestCase):
         #assert(trade1.get_mem_address() == trade_mp.get_mem_address())
         #assert(trade1.get_units() == 100.0)
         #assert(trade1.get_average_price() == 101.0)
-        print("test_sub_portfolio_create passed...")
-
     def test_portfolio_order_increase(self):
-        print("test_portfolio_order_increase running...")
-
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
         
@@ -137,8 +127,6 @@ class PortfolioTestMethods(unittest.TestCase):
         print("test_portfolio_order_increase passed...")
         
     def test_portfolio_eval(self):
-        print("test_portfolio_eval running...")
-
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
         
@@ -186,13 +174,9 @@ class PortfolioTestMethods(unittest.TestCase):
         
         assert(portfolio1.get_nlv() == (10000 + (50 * .5)))
         assert(portfolio2.get_nlv() == (10000 + (-100 * .5)))
-        assert(mp.get_nlv() == portfolio1.get_nlv() + portfolio2.get_nlv())
-        print("test_portfolio_eval passed...")
-        
+        assert(mp.get_nlv() == portfolio1.get_nlv() + portfolio2.get_nlv())        
             
     def test_portfolio_order_traget_size(self):
-        print("test_portfolio_order_traget_size running...")
-
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
         
@@ -226,7 +210,6 @@ class PortfolioTestMethods(unittest.TestCase):
         print("test_portfolio_order_traget_size passed...")
             
     def test_portfolio_close_position(self):
-        print("test_portfolio_close_position running...")
 
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
@@ -280,7 +263,6 @@ class PortfolioTestMethods(unittest.TestCase):
         p2 = portfolio1.get_position(helpers.test1_asset_id)
         assert(p1 is None)
         assert(p2 is None)
-        print("test_portfolio_close_position passed...")
         
     def test_parent_portfolio_close(self):
         hydra = helpers.create_simple_hydra(logging=0)
@@ -322,10 +304,8 @@ class PortfolioTestMethods(unittest.TestCase):
         assert(mp is None)
         assert(p1 is None)
         assert(p2 is None)
-        print("test_parent_portfolio_close passed...")
         
     def test_portfolio_target_allocations_order(self):
-        print("test_portfolio_target_allocations_order running...")
         hydra = helpers.create_simple_hydra(logging=0)
         mp = hydra.get_master_portfolio()
         
@@ -416,10 +396,8 @@ class PortfolioTestMethods(unittest.TestCase):
         portfolio2_nlv2 =  portfolio2_nlv1 + (50 * (98-99)) + (-50 * (102 - 101)) + (-50 * (97-98)) + (50 * (103 - 102))
         assert(portfolio2_nlv2 == portfolio2.get_nlv())
         assert(mp.get_nlv() == portfolio1_nlv2 + portfolio2_nlv2)
-        print("test_portfolio_target_allocations_order passed...")
                     
     def test_portfolio_target_allocations_short(self):
-        print("test_portfolio_target_allocations_short running...")
         hydra = helpers.create_simple_hydra(logging=0)
         portfolio1 = hydra.new_portfolio("test_portfolio1",100000.0);
         mp = hydra.get_portfolio("master")
@@ -456,13 +434,21 @@ class PortfolioTestMethods(unittest.TestCase):
         assert(p1.get_last_price() == 103)
         assert(p2.get_last_price() == 97)
         
-        nlv = 100000 + ((100000 * .6)/99)*(97-99) + (-1*(100000 * .4)/101)*(103-101)
+        units1 = (100000 * .6)/99
+        units2 = (-1*(100000 * .4)/101)
+        nlv = 100000 + units1*(97-99) + units2*(103-101)
+        cash = 100000 - units1*99 - units2*101
+
         assert(nlv == portfolio1.get_nlv())
+        assert(cash == portfolio1.get_cash())
 
         hydra.backward_pass()
 
         hydra.forward_pass()
         hydra.on_open()
+
+        nlv2 = 100000 + units1*(101.5-99) + units2*(105-101)
+        assert(abs(nlv2 - portfolio1.get_nlv()) < 1e-8)
 
         allocations = {helpers.test1_asset_id : -.4, helpers.test2_asset_id : .6}
         portfolio1.order_target_allocations(
@@ -472,12 +458,18 @@ class PortfolioTestMethods(unittest.TestCase):
         )
         hydra.backward_pass()
 
+        units1_1 = (nlv * .6)/101.5
+        units2_1 = (-1*(nlv * .4)/105)
+        cash2 = cash - (units1-units1_1)*101.5 - (units2-units2_1)*105
+
         p1 = mp.get_position(helpers.test1_asset_id)
         p2 = mp.get_position(helpers.test2_asset_id)
         assert(p1.get_last_price() == 105)
         assert(p2.get_last_price() == 101.5)
 
-        print("test_portfolio_target_allocations_short passed...")
+        print(cash2, portfolio1.get_cash())
+        #assert(cash2 == portfolio1.get_cash())
+        assert(abs(nlv2 - portfolio1.get_nlv()) < 1e-9)
         
 if __name__ == '__main__':  
     unittest.main()

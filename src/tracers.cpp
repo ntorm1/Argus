@@ -85,9 +85,9 @@ void PortfolioHistory::reset(bool clear_history)
     }
 }
 
-void PortfolioHistory::update(){
+void PortfolioHistory::update(long long datetime){
     for(auto& tracer : this->tracers)
     {
-        tracer->step();
+        tracer->step(datetime);
     }
 }

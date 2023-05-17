@@ -121,7 +121,7 @@ public:
     void evaluate(bool on_close);
 
     /// @brief recursivly populate PortfolioHistory object with current portfolio values
-    void update();
+    void update(long long datetime);
 
     /// @brief set the portfolio event tracer when/if it is registered
     void set_event_tracer(shared_ptr<EventTracer> event_tracer_){this->event_tracer = event_tracer_;}
@@ -381,7 +381,7 @@ public:
     virtual PortfolioTracerType tracer_type() const = 0;
 
     /// pure virtual step function to be called on new step
-    virtual void step() = 0;
+    virtual void step(long long datetime) = 0;
 
     // pure virtual function to build the tracer
     virtual void build(size_t portfolio_eval_length) = 0;
@@ -404,28 +404,34 @@ public:
     std::vector<double> nlv_history;
 
     /// historical cash values of the portfolio
-    vector<double> cash_history;
+    std::vector<double> cash_history;
+
+    /// datetime index the portfolio was evaluated at
+    std::vector<long long> datetime_index;
 
     /// Tracer type
     PortfolioTracerType tracer_type() const override {return PortfolioTracerType::Value;}
     
     /// step function
-    void step() override
+    void step(long long datetime) override
     {
         this->cash_history.push_back(this->parent_portfolio->get_cash());
         this->nlv_history.push_back(this->parent_portfolio->get_nlv());
+        this->datetime_index.push_back(datetime);
     };
 
     /// build function, reserve space for vector to prevent extra
     void build(size_t portfolio_eval_length) override{
         this->nlv_history.reserve(portfolio_eval_length);
         this->cash_history.reserve(portfolio_eval_length);
+        this->datetime_index.reserve(portfolio_eval_length);
     }
 
     /// build function
     void reset() override{
         this->nlv_history.clear();
         this->cash_history.clear();
+        this->datetime_index.clear();
     }
 
     /// @brief get the historical net liquidation values of the portfolio
@@ -441,6 +447,13 @@ public:
         return to_py_array(
         this->cash_history.data(),
         this->cash_history.size(),
+        true);
+    }
+    /// @brief get the historical cash values of the portfolio
+    py::array_t<double> get_datetime_index(){
+        return to_py_array(
+        this->datetime_index.data(),
+        this->datetime_index.size(),
         true);
     }
 };
@@ -459,7 +472,7 @@ public:
     PortfolioTracerType tracer_type() const override {return PortfolioTracerType::Event;}
 
     /// empty stepper
-    void step() override {}
+    void step(long long datetime) override {}
 
     /// build event tracer
     void build(size_t portfolio_eval_length) override {}
@@ -511,7 +524,7 @@ public:
     Portfolio* parent_portfolio;
 
     /// update historical values with current snapshot
-    void update();
+    void update(long long datetime);
 
     ///is the portfolio history built
     bool is_built;

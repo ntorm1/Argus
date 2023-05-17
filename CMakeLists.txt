@@ -52,4 +52,8 @@ else()
 endif()
 
 set_target_properties(FastTest PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-target_link_libraries(FastTest PRIVATE -L${MINGW_PATH}/lib Python::Python fmt::fmt-header-only ${GMP_LIBRARY})
+target_link_libraries(FastTest PRIVATE 
+    -L${MINGW_PATH}/lib 
+    pybind11::pybind11
+    fmt::fmt-header-only 
+    ${GMP_LIBRARY})

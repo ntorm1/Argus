@@ -577,7 +577,8 @@ py::dict Exchange::get_exchange_feature(
             }
             break;
         //get the N/2 smallest and N/2 largest values for the given column
-        case ExchangeQueryType::NExtreme: //skips integer reaminder (i.e. N=3 returns 2 assets)
+        //skips integer reaminder (i.e. N=3 returns 2 assets)
+        case ExchangeQueryType::NExtreme: 
             for(size_t i = 0; i < std::floor(number_assets/2); i++)
             {
                 auto pair = asset_pairs[i];

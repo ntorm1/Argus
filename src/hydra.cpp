@@ -435,7 +435,7 @@ void Hydra::backward_pass(){
     }
 
     //update historicals values
-    this->master_portfolio->update();
+    this->master_portfolio->update(this->hydra_time);
         
     if(this->logging == 1)
     {

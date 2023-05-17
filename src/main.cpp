@@ -167,6 +167,7 @@ void init_portfolio_ext(py::module &m)
 
     py::class_<PortfolioTracer, shared_ptr<PortfolioTracer>>(m, "PortfolioTracer");
     py::class_<ValueTracer, PortfolioTracer, shared_ptr<ValueTracer>>(m, "ValueTracer")
+        .def("get_datetime_index", &ValueTracer::get_datetime_index)
         .def("get_nlv_history", &ValueTracer::get_nlv_history)
         .def("get_cash_history", &ValueTracer::get_cash_history);
 

@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath('..'))
 
 import FastTest
 from FastTest import Broker, Exchange, Asset, Portfolio, Hydra
+from FastTest import PortfolioTracerType, ExchangeQueryType, OrderExecutionType
 
 class Hal:
     def __init__(self, logging : int, cash : float = 0.0) -> None:
@@ -148,6 +149,17 @@ class Hal:
     def get_position_history(self):
         return self.hydra.get_position_history()
     
+    def get_value_history(self):
+        mp = self.get_portfolio("master")
+        tracer =  mp.get_tracer(PortfolioTracerType.VALUE)
+        dt_index = tracer.get_datetime_index()
+        nlv = tracer.get_nlv_history()
+        cash = tracer.get_cash_history()
+
+        df = pd.DataFrame(data = [nlv, cash]).T
+        df.index = pd.to_datetime(dt_index)
+        df.columns = ["NLV", "CASH"]
+        return df
            
 def asset_from_df(df: Type[pd.DataFrame], 
                 asset_id: str,
