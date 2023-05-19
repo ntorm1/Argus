@@ -254,6 +254,16 @@ double Asset::c_get(size_t column_index) const
     return *(this->row - this->cols + column_index);
 }
 
+double Asset::get_volatility()
+{
+    if(!this->volatility.has_value())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+
+    return *this->volatility.value();
+}
+
 double Asset::get(const std::string &column, size_t row_index) const
 {
     // fetch the column index of it exists
@@ -453,7 +463,11 @@ void Asset::add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust
     switch (tracer_type)
     {
     case AssetTracerType::Volatility:
-        this->tracers.push_back( std::make_shared<VolatilityTracer>(this, lookback, adjust_warmup));
+    {
+        auto new_tracer = std::make_shared<VolatilityTracer>(this, lookback, adjust_warmup);
+        this->tracers.push_back(new_tracer);
+        break;
+    }
     default:
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotImplemented);
     }
@@ -463,11 +477,12 @@ ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
 {
     double* start_ptr;
     size_t start_index;
+    
     // if the asset's current index is greater than the lookback we have all the data we need
     // so set the start pointer to the current row minus lookback rows.
     if(asset->current_index >= lookback)
     {   
-        start_ptr = asset->get_row() - (lookback * asset->get_cols());
+        start_ptr = asset->get_row() - (lookback * asset->get_cols()) + asset->close_column;
         start_index = asset->current_index - lookback;
     }
     else
@@ -485,7 +500,7 @@ ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
     array_window.start_ptr_index = start_index;
 
     // if the start index is not 0 then the window is fully populated
-    if(!start_index)
+    if(asset->current_index >= lookback)
     {
         array_window.rows_needed = 0;
     }
@@ -494,6 +509,20 @@ ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
         array_window.rows_needed = lookback - asset->current_index;
     }
     return array_window;
+}
+AssetTracer::AssetTracer(Asset* parent_asset_, size_t lookback_) :
+    parent_asset(parent_asset_), lookback(lookback_)
+{   
+    // asset must be built before adding a tracer to it
+    if(!parent_asset_->get_is_built())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+    // make sure the lookback period is not greater than the number of rows loaded
+    if(parent_asset->get_rows() < lookback)
+    {   
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
+    }
 }
 
 BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_) 
@@ -513,18 +542,6 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     if(this->parent_asset->frequency != this->index_asset->frequency)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidAssetFrequency);
-    }
-
-    // assets must be build for adding tracer
-    if(!parent_asset->get_is_built() || !index_asset->get_is_built())
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
-    }
-
-    // make sure the lookback period is not greater than the number of rows loaded
-    if(parent_asset->get_rows() < lookback || index_asset->get_rows() < lookback)
-    {   
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
     
     this->asset_window =  init_array_window(parent_asset_, lookback);
@@ -567,76 +584,79 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
 VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 
         : AssetTracer(parent_asset_, lookback_)
 {
-    // make sure the lookback period is not greater than the number of rows loaded
-    if(parent_asset->get_rows() < lookback)
-    {   
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
-    }
     // if the asset hasn't been built yet, allow for lookback to adjust the warmup needed for the asset
-    if(!parent_asset->get_is_built() && adjust_warmup)
+    if(adjust_warmup && lookback_ > parent_asset_->get_warmup())
     {
-        if(lookback_ > parent_asset_->get_warmup())
-        {
-            parent_asset_->set_warmup(lookback_);
-        }   
+        parent_asset_->set_warmup(lookback_); 
     }
 
     // build the asset window
     this->asset_window = init_array_window(parent_asset_, lookback);
 
     // volatility calculations given the passed data
-    double previous;
+    double previous = *this->asset_window.begin();
     int i = 0;
-    for(auto it = this->asset_window.begin(); it != this->asset_window.end(); it++)
+    auto it = this->asset_window.begin();
+
+    if(it != this->asset_window.end())
     {
-        if(i = 0)
-        {
-            previous = *it;
-        }
-        else
-        {
-            auto pct_change = (*it - previous) / previous;
-            this->sum += pct_change;
-            this->sum_sqaures += pow(pct_change, 2);
-            previous = *it;
-        }
+        it++;
+    }
+
+    for(; it != this->asset_window.end(); it++)
+    {
+        auto next = *it;
+        auto pct_change = (next - previous) / previous;
+        this->sum += pct_change;
+        this->sum_sqaures += pow(pct_change, 2);
+        previous = next;
         i++;
     }
 
+    // note i not i + 1 to get unbiased estimator
     this->mean = this->sum / i;
 
     // if the window is fully loaded set the volatility
-    if(parent_asset_->current_index >= lookback)
+    if(parent_asset_->current_index >= lookback_)
     {
-        this->volatility = (this->sum_sqaures / this->lookback) - pow(this->mean, 2);
+        this->volatility =sqrt((this->sum_sqaures / this->lookback) - pow(this->mean, 2));
+        this->parent_asset->set_volatility(&this->volatility);
     }
 }
 
 void VolatilityTracer::step()
 {
-    // calculate pct change
-    double previous_value = *(this->asset_window.end_ptr - this->asset_window.stride);
-    double new_value = (*this->asset_window.end_ptr - previous_value) / previous_value;
-
-    // get the last value about to be popped off 
+    double previous_value = *this->asset_window.end_ptr; 
     double old_value = *this->asset_window.start_ptr;
+    double old_pct = (*(this->asset_window.start_ptr + this->asset_window.stride) - old_value) / old_value;
 
-    //move ptrs forward
+    // move ptrs forward
     this->asset_window.step();
-    this->sum += new_value;
-    this->sum_sqaures += pow(new_value, 2);
 
-    // asset not fully loaded
+    // new value is the pct change since the previous
+    double new_pct = (*this->asset_window.end_ptr - previous_value) / previous_value;
+
+    this->sum += new_pct;
+    this->sum_sqaures += pow(new_pct, 2);
+
+    // asset fully loaded
     if(!this->asset_window.rows_needed)
     {
-        this->sum -= old_value;
-        this->sum_sqaures -= pow(old_value,2);
-        this->mean = this->sum / this->lookback;
-        this->volatility = (this->sum_sqaures / this->lookback) -  pow(this->mean,2);
+        this->sum -= old_pct;
+        this->sum_sqaures -= pow(old_pct,2);
+        this->mean = this->sum / (this->lookback-1);
+        this->volatility = sqrt((this->sum_sqaures / this->lookback) - pow(this->mean, 2));
     }
     // still accumulating values
     else
     {        
         this->asset_window.rows_needed--;
+
+        // we have reached the point to where data is ready, set the parent asset's volatility 
+        // to point to this
+        if(this->asset_window.rows_needed == 0)
+        {
+            this->parent_asset->set_volatility(&this->volatility);
+        }
     }
 }

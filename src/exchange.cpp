@@ -227,7 +227,19 @@ void ExchangeMap::register_asset(const shared_ptr<Asset> &asset_, const string& 
     exchange->register_asset(asset_);
 
     // add asset to the exchange map's own map
-    this->asset_map.emplace(asset_id, asset_.get());
+    this->asset_map.emplace(asset_id, asset_);
+}
+
+optional<asset_sp_t> ExchangeMap::get_asset(const string& asset_id_)
+{
+    if(!this->asset_map.contains(asset_id_))
+    {
+        return nullopt;
+    }
+    else
+    {
+        return this->asset_map.at(asset_id_);
+    }
 }
 
 py::array_t<long long> Exchange::get_datetime_index_view()

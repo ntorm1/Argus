@@ -47,8 +47,8 @@ struct ArrayWindow
      */
     inline void step()
     {   
-        this->start_ptr++;
-        this->end_ptr++;
+        this->start_ptr += stride;
+        this->end_ptr   += stride;
     }
 
     /**

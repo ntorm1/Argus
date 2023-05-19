@@ -139,6 +139,14 @@ public:
     /// @brief get shared pointer to an exchange
     shared_ptr<Exchange> get_exchange(const string &exchange_id);
 
+    /**
+     * @brief Get an existing asset from the exchange map
+     * 
+     * @param asset_id      unique id of the asset to get
+     * @return asset_sp_t   axisting asset 
+     */
+    optional<asset_sp_t> get_asset(const string& asset_id);
+
     /// @brief get shared pointer to a broker
     broker_sp_t get_broker(const string &broker_id);
 
@@ -169,8 +177,12 @@ public:
     /// @brief self to void ptr and return
     void* void_ptr() { return static_cast<void*>(this);};
 
-    /// @brief register an asset on the exchange
-    /// @param asset smart pointer to new asset to register
+    /**
+     * @brief register a new asset to an exchange
+     * 
+     * @param asset         the new asset to be registered
+     * @param exchange_id   the unique id of the exchange to register it to
+     */
     void register_asset(const asset_sp_t &asset, const string & exchange_id);
 
 };

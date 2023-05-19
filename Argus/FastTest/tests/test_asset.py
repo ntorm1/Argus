@@ -2,14 +2,13 @@
 import sys
 import os
 import unittest
-import numpy as np
-
-os.add_dll_directory("C:\\msys64\\mingw64\\bin")
+import pandas as pd
 
 sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../lib'))
 
 import FastTest
+from FastTest import AssetTracerType
 from Hal import Hal, asset_from_df
 import helpers
 
@@ -62,7 +61,44 @@ class AssetTestMethods(unittest.TestCase):
 
     def test_vol_tracer(self):
         hal = helpers.create_spy_hal()
+        hydra = hal.get_hydra()
+        spy = hydra.get_asset("SPY")
+
+        assert(spy is not None)
+
+        spy.add_tracer(AssetTracerType.VOLATILITY, 252, True)
+        cpp_vol = spy.get_volatility()
+
+        df = pd.read_csv(helpers.test_spy_file_path)
+        df.set_index("Date", inplace=True)
+
+        length = 252
+        df["returns"] = df["Close"].pct_change()
+        df["vol"] = df["Close"].pct_change().rolling(length).std(ddof=1)
+
+        _sum = df["returns"].head(length).sum()
+        mean = df["returns"].head(length).sum() / (length - 1)
+        sos = (df["returns"].head(length)**2).sum()
+        vol = ((sos / length) - mean**2)**(.5)
+
+        assert((cpp_vol - vol) < 1e-10)
+
+        hydra.build()
         
+        hydra.forward_pass()
+        hydra.on_open()
+        hydra.backward_pass()
+        
+        # 2 because first is NAN
+        df = df.iloc[2:]
+
+        _sum = df["returns"].head(length).sum()
+        mean = df["returns"].head(length).sum() / (length - 1)
+        sos = (df["returns"].head(length)**2).sum()
+        vol = ((sos / length) - mean**2)**(.5)
+
+        cpp_vol = spy.get_volatility()
+        assert((cpp_vol - vol) < 1e-10)
                 
 if __name__ == '__main__':
     unittest.main()

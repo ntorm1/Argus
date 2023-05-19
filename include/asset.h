@@ -31,7 +31,7 @@ enum AssetTracerType
 
 
 class Asset
-{
+{ 
 public:
     typedef shared_ptr<Asset> asset_sp_t;
 
@@ -143,7 +143,7 @@ public:
      * @param tracer_type type of tracer to add
      * @param lookback    lookback of the tracer
      */
-    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup);
+    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup = false);
 
     /// @brief get a pointer to the current row of the asset
     /// @return const pointer to the underlying row data
@@ -211,20 +211,24 @@ public:
         size_t cols,
         bool is_view);
 
-    /// get data point from current asset row
+    /// @brief get data point from current asset row
     [[nodiscard]] double c_get(size_t column_offset) const;
 
-    /// get data point from asset
+    /// @brief get data point from asset
     [[nodiscard]] double get(const string &column, size_t row_index) const;
 
-    /// get fixed point rep of current market price
+    /// @brief get fixed point rep of current market price
     [[nodiscard]] double get_market_price(bool on_close) const;
 
-    /// get the current datetime of the asset
+    /// @brief get the current datetime of the asset
     [[nodiscard]] long long *get_asset_time() const;
 
-    /// get read only numpy array of the asset's datetime index
+    /// @brief get read only numpy array of the asset's datetime index
     py::array_t<long long> get_datetime_index_view();
+    
+    /// @brief get the current volatility of the asset
+    /// @return volatility of the asset
+    double get_volatility();
 
     size_t get_warmup(){return this->warmup;}
 
@@ -261,6 +265,13 @@ public:
      */
     void set_warmup(size_t warmup);
 
+    /**
+     * @brief Set the volatility to point to an asset tracers value
+     * 
+     * @param volatility_ pointer to the volatility set by the tracer
+     */
+    void set_volatility(double* volatility_){this->volatility = volatility_;}
+
     /// step the asset forward in time
     void step();
 
@@ -292,6 +303,11 @@ private:
     /// @brief warmup period, i.e. number of rows to skip
     size_t warmup = 0;
 
+    /// @brief optional pointer to a voltaility tracer's value
+    optional<double*> volatility = nullopt;
+
+    /// @brief optional pointer to a beta tracer's value
+    optional<double*> beta = nullopt;
 };
 
 /// function for creating a shared pointer to a asset
@@ -309,8 +325,7 @@ class AssetTracer
 {
 public:
     /// Asset Tracer constructor 
-    AssetTracer(Asset* parent_asset_, size_t lookback_) : 
-        parent_asset(parent_asset_), lookback(lookback_){};
+    AssetTracer(Asset* parent_asset_, size_t lookback_);
 
     /// Asset Tracer default destructor 
     virtual ~AssetTracer() = default;
@@ -340,6 +355,8 @@ protected:
 
     /// @brief size of the lookback window of tracer
     size_t lookback;
+
+
 };
 
 class VolatilityTracer : public AssetTracer

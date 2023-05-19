@@ -213,11 +213,13 @@ public:
     typedef std::unordered_map<string, shared_ptr<Exchange>> Exchanges;
     typedef shared_ptr<ExchangeMap> exchanges_sp_t;
 
+    using asset_sp_t = Asset::asset_sp_t;
+
     /// mapping between exchange id and exchange object
     Exchanges exchanges;
 
     /// mapping between asset id and asset pointer
-    std::unordered_map<string, Asset*> asset_map;
+    std::unordered_map<string, asset_sp_t> asset_map;
 
     /// wether the exchanges are on the close step or open
     bool on_close = false;
@@ -228,7 +230,15 @@ public:
      * @param asset_  shared pointer to new asset to register
      * @param exchange_id unique id of the exchange to register it too
      */
-    void register_asset(const shared_ptr<Asset>& asset_, const string& exchange_id);
+    void register_asset(const shared_ptr<Asset>& asset_, const string& exchange_id_);
+
+    /**
+     * @brief get an existing asset on the exchange map
+     * 
+     * @param asset_id_                 unique id of the asset to look for
+     * @return optional<asset_sp_t>     existing asset, none if not exists
+     */
+    optional<asset_sp_t> get_asset(const string& asset_id_);
 
     /// get market price of asset
     double get_market_price(const string& asset_id);

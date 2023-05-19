@@ -31,12 +31,15 @@ void init_asset_ext(py::module &m)
         .def("get", &Asset::get)
         .def("get_mem_address", &Asset::get_mem_address)
         .def("get_column", &Asset::get_column)
+        .def("get_volatility", &Asset::get_volatility)
         .def("get_datetime_index_view",
              &Asset::get_datetime_index_view,
              py::return_value_policy::reference)
 
-        .def("add_tracer", &Asset::add_tracer);
-
+        .def("add_tracer", &Asset::add_tracer),
+            py::arg("tracer_type"),
+            py::arg("lookback"),
+            py::arg("adjust_warmup") = false;
 
     m.def("new_asset", &new_asset, py::return_value_policy::reference,
             py::arg("asset_id"),
@@ -113,6 +116,7 @@ void init_hydra_ext(py::module &m)
         .def("get_broker", &Hydra::get_broker)
         .def("get_master_portfolio", &Hydra::get_master_portflio)
         .def("get_portfolio", &Hydra::get_portfolio)
+        .def("get_asset", &Hydra::get_asset)
         .def("get_exchange", &Hydra::get_exchange);
 
     m.def("new_hydra", &new_hydra, py::return_value_policy::reference);
@@ -264,6 +268,11 @@ void init_enum(py::module &m){
     py::enum_<PortfolioTracerType>(m, "PortfolioTracerType")
         .value("VALUE", PortfolioTracerType::Value)
         .value("EVENT", PortfolioTracerType::Event)
+        .export_values();
+
+    py::enum_<AssetTracerType>(m, "AssetTracerType")
+        .value("VOLATILITY", AssetTracerType::Volatility)
+        .value("BETA", AssetTracerType::Beta)
         .export_values();
 
     py::enum_<ExchangeQueryType>(m, "ExchangeQueryType")

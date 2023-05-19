@@ -23,7 +23,8 @@ enum ArgusErrorCode {
   NotBuilt,
 
   IndexOutOfBounds,
-  
+
+  InvalidTracerType,
   InvalidAssetFrequency,
   InvalidTracerAsset,
   InvalidDataRequest,
@@ -40,6 +41,7 @@ static const std::string EnumStrings[] =
 
   "Index Out of Bounds Error",
 
+  "Invalid tracer type"
   "Invalid asset frequency",
   "Invalid tracer asset passed",
   "Invalid data request",

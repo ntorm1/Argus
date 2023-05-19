@@ -21,6 +21,7 @@ using namespace std;
 
 using portfolio_sp_t = Portfolio::portfolio_sp_t;
 using exchanges_sp_t = ExchangeMap::exchanges_sp_t; 
+using asset_sp_t = Asset::asset_sp_t;
 
 Hydra::Hydra(int logging_, double cash_) : master_portfolio(nullptr)
 {   
@@ -145,11 +146,15 @@ void Hydra::build()
     this->is_built = true;
 };
 
-void Hydra::register_asset(const shared_ptr<Asset> &asset_, const string & exchange_id_)
+void Hydra::register_asset(const asset_sp_t &asset_, const string & exchange_id_)
 {
     this->exchange_map->register_asset(asset_, exchange_id_);
 }
 
+optional<asset_sp_t> Hydra::get_asset(const string& asset_id_)
+{
+    return this->exchange_map->get_asset(asset_id_);
+}
 
 shared_ptr<Portfolio> Hydra::get_portfolio(const string& portfolio_id){
     if(portfolio_id == this->master_portfolio->get_portfolio_id()){
