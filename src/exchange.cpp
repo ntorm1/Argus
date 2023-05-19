@@ -200,11 +200,10 @@ void Exchange::register_index(const asset_sp_t &asset_)
     }
 }
 
-void Exchange::register_asset(const shared_ptr<Asset> &asset_)
+void Exchange::register_asset(const shared_ptr<Asset>& asset_)
 {
     string asset_id = asset_->get_asset_id();
-
-#ifdef DEBUGGING
+    #ifdef DEBUGGING
     fmt::print("EXCHANGE: exchange {} registering asset: {} \n", this->exchange_id, asset_id);
 #endif
 
@@ -217,6 +216,18 @@ void Exchange::register_asset(const shared_ptr<Asset> &asset_)
         this->market.emplace(asset_id, asset_);
         this->market_view.emplace(asset_id, nullptr);
     }
+}
+
+void ExchangeMap::register_asset(const shared_ptr<Asset> &asset_, const string& exchange_id)
+{
+    string asset_id = asset_->get_asset_id();
+
+    // register asset to the exchange
+    auto exchange = this->exchanges.find(exchange_id)->second;
+    exchange->register_asset(asset_);
+
+    // add asset to the exchange map's own map
+    this->asset_map.emplace(asset_id, asset_.get());
 }
 
 py::array_t<long long> Exchange::get_datetime_index_view()
@@ -599,8 +610,7 @@ py::dict Exchange::get_exchange_feature(
 double ExchangeMap::get_market_price(const string& asset_id)
 {
     auto& asset = this->asset_map.at(asset_id);
-    auto exchange = this->exchanges.find(asset->exchange_id);
-    return asset->get_market_price(exchange->second->on_close);
+    return asset->get_market_price(this->on_close);
 }
 
 shared_ptr<Exchange> new_exchange(const string &exchange_id, int logging_)

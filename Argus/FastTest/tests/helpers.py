@@ -54,8 +54,8 @@ def create_simple_hydra(logging = 0) -> FastTest.Hydra:
     hydra = FastTest.Hydra(logging, 0.0)
     broker = hydra.new_broker(test1_broker_id,100000.0)
     exchange = hydra.new_exchange(test1_exchange_id)
-    exchange.register_asset(asset1)
-    exchange.register_asset(asset2)
+    hydra.register_asset(asset1, test1_exchange_id)
+    hydra.register_asset(asset2, test1_exchange_id)
     return hydra
 
 def create_simple_hal(logging: int = 0) -> Hal:
@@ -75,10 +75,24 @@ def create_simple_hal(logging: int = 0) -> Hal:
     hal = Hal(logging, 0.0)
     broker = hal.new_broker(test1_broker_id,100000.0)
     exchange = hal.new_exchange(test1_exchange_id)
-    exchange.register_asset(asset1)
-    exchange.register_asset(asset2)
+    hal.register_asset(asset1,test1_exchange_id)
+    hal.register_asset(asset2,test1_exchange_id)
     
     return hal 
+
+def create_spy_hal(logging: int = 0, cash: float = 100000) -> Hal:
+    hal = Hal(logging, cash)
+    broker = hal.new_broker(test1_broker_id,cash)
+    exchange = hal.new_exchange(test1_exchange_id)
+    
+    df = pd.read_csv(test_spy_file_path)
+    df.set_index("Date", inplace=True)
+    df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)
+    asset = asset_from_df(df, "SPY", test1_exchange_id, test1_broker_id)
+
+    hal.register_asset(asset, test1_exchange_id)
+
+    return hal
 
 def create_big_hal(logging: int = 0, cash: float = 0) -> Hal:
     hal = Hal(logging, cash)

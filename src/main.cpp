@@ -55,7 +55,6 @@ void init_exchange_ext(py::module &m)
     py::class_<Exchange, std::shared_ptr<Exchange>>(m, "Exchange")
         .def("build", &Exchange::build)
         .def("new_asset", &Exchange::new_asset)
-        .def("register_asset", &Exchange::register_asset)
         
         .def("get_asset", &Exchange::get_asset, py::return_value_policy::reference)
         .def("get_exchange_feature", 
@@ -86,6 +85,7 @@ void init_hydra_ext(py::module &m)
         .def("run", &Hydra::run,
             py::arg("steps") = 0,
             py::arg("to") = 0)
+        .def("register_asset", &Hydra::register_asset)
         .def("reset_strategies", &Hydra::reset_strategies)
         .def("reset", &Hydra::reset,
             py::arg("clear_history") = true,

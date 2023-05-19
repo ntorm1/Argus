@@ -562,7 +562,6 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     {
         
     }
-
 }
 
 VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 

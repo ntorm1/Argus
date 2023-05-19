@@ -26,8 +26,11 @@ enum ExchangeQueryType
     NExtreme
 };
 
+class ExchangeMap;
+
 class Exchange
 {
+friend class ExchangeMap;  
 public:
     typedef shared_ptr<Exchange> exchange_sp_t;
 
@@ -62,10 +65,6 @@ public:
 
     /// build the market view, return false if all assets listed are done streaming
     bool get_market_view();
-
-    /// @brief register an asset on the exchange
-    /// @param asset smart pointer to new asset to register
-    void register_asset(const asset_sp_t &asset);
 
     /// @brief register a new index asset for the exchange
     /// @param index smart pointer to asset reprenting the index
@@ -186,6 +185,13 @@ private:
     /// current position in datetime index
     size_t current_index;
 
+    /**
+     * @brief register a new asset on the exchange, only to be called through the friend ExchangeMap class
+     * 
+     * @param asset new asset to register
+     */
+    void register_asset(const asset_sp_t &asset);
+    
     /// process open orders on the exchange
     void process_order(shared_ptr<Order> &open_order);
 
@@ -213,7 +219,18 @@ public:
     /// mapping between asset id and asset pointer
     std::unordered_map<string, Asset*> asset_map;
 
-    // get market price of asset
+    /// wether the exchanges are on the close step or open
+    bool on_close = false;
+
+    /**
+     * @brief register a new asset to the exchange map
+     * 
+     * @param asset_  shared pointer to new asset to register
+     * @param exchange_id unique id of the exchange to register it too
+     */
+    void register_asset(const shared_ptr<Asset>& asset_, const string& exchange_id);
+
+    /// get market price of asset
     double get_market_price(const string& asset_id);
 
     /// reset exchange map

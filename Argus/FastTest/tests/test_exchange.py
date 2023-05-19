@@ -26,7 +26,7 @@ class ExchangeTestMethods(unittest.TestCase):
 
         hydra = FastTest.Hydra(0, 0.0)
         exchange = hydra.new_exchange("exchange1")
-        exchange.register_asset(asset1)
+        hydra.register_asset(asset1,"exchange1")
         exchange.build()
         exchange_index = exchange.get_datetime_index_view()
         assert(np.array_equal(exchange_index, asset1.get_datetime_index_view()))
@@ -47,8 +47,8 @@ class ExchangeTestMethods(unittest.TestCase):
 
         hydra = FastTest.Hydra(0, 0.0)
         exchange = hydra.new_exchange("exchange1")
-        exchange.register_asset(asset1)
-        exchange.register_asset(asset2)
+        hydra.register_asset(asset1, "exchange1")
+        hydra.register_asset(asset2, "exchange1")
         exchange.build()
         exchange_index = exchange.get_datetime_index_view()
 

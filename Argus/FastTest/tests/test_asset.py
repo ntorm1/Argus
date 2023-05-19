@@ -52,13 +52,17 @@ class AssetTestMethods(unittest.TestCase):
 
         # register the existing asset to the exchange, the asset in the exchange's market
         # should have the same meory address as asset1 created above
-        exchange.register_asset(asset1)
+        hydra.register_asset(asset1,"exchange1")
         asset2 = exchange.get_asset("asset1")
 
         address_1 = asset1.get_mem_address()
         address_2 = asset2.get_mem_address()
 
         assert (address_1 == address_2)
+
+    def test_vol_tracer(self):
+        hal = helpers.create_spy_hal()
+        
                 
 if __name__ == '__main__':
     unittest.main()

@@ -65,9 +65,8 @@ class Hal:
         return parent_portfolio.create_sub_portfolio(portfolio_id, cash)
         
     def register_asset(self, asset : Asset, exchange_id : str) -> None:
-        exchange = self.hydra.get_exchange(exchange_id)
-        exchange.register_asset(asset)
-        
+        self.hydra.register_asset(asset, exchange_id)
+
     def register_strategy(self, py_strategy, strategy_id : str, replace_if_exists : bool = True) -> None:
         for attr in ["on_open","on_close","build"]:
             if not hasattr(py_strategy, attr):

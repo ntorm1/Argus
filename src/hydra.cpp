@@ -120,11 +120,6 @@ void Hydra::build()
     {
         it->second->build();
         this->candles += it->second->candles;
-
-        // build the asset map used to look up asset information
-        for(auto& asset_pair : it->second->market){
-            this->exchange_map->asset_map[asset_pair.first] = asset_pair.second.get();
-        }
     }
 
     // build the brokers
@@ -149,6 +144,12 @@ void Hydra::build()
 
     this->is_built = true;
 };
+
+void Hydra::register_asset(const shared_ptr<Asset> &asset_, const string & exchange_id_)
+{
+    this->exchange_map->register_asset(asset_, exchange_id_);
+}
+
 
 shared_ptr<Portfolio> Hydra::get_portfolio(const string& portfolio_id){
     if(portfolio_id == this->master_portfolio->get_portfolio_id()){
@@ -347,6 +348,7 @@ void Hydra::forward_pass()
     #endif
 
     // build market views for exchanges
+    this->exchange_map->on_close = false;
     for (auto &exchange_pair : this->exchange_map->exchanges)
     {
         auto exchange = exchange_pair.second;
@@ -385,6 +387,7 @@ void Hydra::on_open(){
 
 
     // move exchanges to close
+    this->exchange_map->on_close = true;
     for (auto &exchange_pair : this->exchange_map->exchanges)
     {
         exchange_pair.second->set_on_close(true);
@@ -429,19 +432,9 @@ void Hydra::backward_pass(){
         broker_pair.second->process_orders();
     }
 
-    if(this->logging == 1)
-    {
-        this->log("order processing complete");
-    }
-
     //update historicals values
     this->master_portfolio->update(this->hydra_time);
         
-    if(this->logging == 1)
-    {
-        this->log("master portfolio updated");
-    }
-
     // hanndle any assets done streaming
     if(this->current_index < datetime_index_length - 1)
     {
@@ -568,7 +561,7 @@ void Hydra::goto_datetime(long long datetime)
 {
     if(!this->is_built)
     {
-        throw std::runtime_error("hydra must be build first");
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
 
     // move exchanges forward in time

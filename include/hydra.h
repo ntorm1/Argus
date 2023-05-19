@@ -55,6 +55,8 @@ private:
     void log(const string& msg);
 
 public:
+    using asset_sp_t = Asset::asset_sp_t;
+
     /// hydra constructor
     Hydra(int logging_, double cash = 0.0);
 
@@ -100,9 +102,19 @@ public:
      */
     void goto_datetime(long long datetime);
 
-    // replay the simulation using the historical order buffer
+    /**
+     * @brief replay the simulation using the historical order buffer
+     * 
+     */
     void replay();
 
+    /**
+     * @brief in a hydra replay, place all orders for the current hydra time
+     * 
+     * @param order_history        reference of vector of historical orders
+     * @param on_close             replay is currently on close
+     * @param current_order_index  the index if of the order we are currently on
+     */
     void process_order_history(vector<shared_ptr<Order>>& order_history, bool on_close, size_t& current_order_index);
 
     /**
@@ -112,50 +124,54 @@ public:
      */
     vector<shared_ptr<Order>> get_order_history();
     
-    /// evaluate the portfolio at the current market prices
+    /// @brief evaluate the portfolio at the current market prices
     void evaluate_portfolio(bool on_close);
 
-    /// get current simulation time
+    /// @brief get current simulation time
     long long get_hydra_time() {return this->hydra_time;}
 
-    /// get sp to master portfolio
+    /// @brief get sp to master portfolio
     shared_ptr<Portfolio> get_master_portflio() {return this->master_portfolio;}
 
-    /// search for a portfolio in portfolio tree and return it 
+    /// @brief search for a portfolio in portfolio tree and return it 
     shared_ptr<Portfolio> get_portfolio(const string & portfolio_id);
 
-    // add a new child portfolio to the master portfolio and return sp to it
-    shared_ptr<Portfolio> new_portfolio(const string & portfolio_id, double cash);
-
-    /// get shared pointer to an exchange
+    /// @brief get shared pointer to an exchange
     shared_ptr<Exchange> get_exchange(const string &exchange_id);
 
-    /// add a  new exchange to hydra class
-    shared_ptr<Exchange> new_exchange(const string &exchange_id);
-
-    /// create new strategy class
-    shared_ptr<Strategy> new_strategy(string strategy_id = "default", bool replace_if_exists = false);
-
-    /// remove a strategy class from the vector of registered strategies
-    void remove_strategy(string strategy_id);
-
-    /// get shared pointer to a broker
+    /// @brief get shared pointer to a broker
     broker_sp_t get_broker(const string &broker_id);
 
-    /// add a new broker
+    /// @brief add a new child portfolio to the master portfolio and return sp to it
+    shared_ptr<Portfolio> new_portfolio(const string & portfolio_id, double cash);
+
+    /// @brief add a new exchange to hydra class
+    shared_ptr<Exchange> new_exchange(const string &exchange_id);
+
+    /// @brief create new strategy class
+    shared_ptr<Strategy> new_strategy(string strategy_id = "default", bool replace_if_exists = false);
+
+    /// @brief remove a strategy class from the vector of registered strategies
+    void remove_strategy(string strategy_id);
+
+    /// @brief add a new broker
     broker_sp_t new_broker(const string &broker_id, double cash);
 
-    /// total number of rows loaded
+    /// @brief total number of rows loaded
     size_t get_candles(){return this->candles;}
 
-    /// get numpy array read only view into the simulations's datetime index
+    /// @brief get numpy array read only view into the simulations's datetime index
     py::array_t<long long> get_datetime_index_view();
     
-    /// handle a asset id that has finished streaming (remove from portfolio and exchange)
+    /// @brief handle a asset id that has finished streaming (remove from portfolio and exchange)
     void cleanup_asset(const string& asset_id);
 
-    //cast self to void ptr and return
+    /// @brief self to void ptr and return
     void* void_ptr() { return static_cast<void*>(this);};
+
+    /// @brief register an asset on the exchange
+    /// @param asset smart pointer to new asset to register
+    void register_asset(const asset_sp_t &asset, const string & exchange_id);
 
 };
 
