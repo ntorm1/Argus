@@ -71,6 +71,16 @@ struct ArrayWindow
         );
     }
 
+    std::pair<T, T> pct_change()
+    {
+        T previous_value = *(this->end_ptr -  this->stride); 
+        T old_value = *this->start_ptr;
+        
+        T old_pct = (*(this->start_ptr + this->stride) - old_value) / old_value;
+        T new_pct = (*this->end_ptr - previous_value) / previous_value;
+        return std::make_pair(old_pct, new_pct);
+    }
+
     struct iterator {
         T* ptr;
         size_t stride;

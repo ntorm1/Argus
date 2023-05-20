@@ -7,6 +7,7 @@
 #include <cstddef>
 #include "pch.h"
 #include <cmath>
+#include <optional>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
@@ -56,19 +57,18 @@ public:
     ~Asset();
 
     AssetFrequency frequency;   ///< the frequency of the asset rows (1D, 1H, etc..)
+       
+    bool is_alligned;           ///< is the asset's datetime index alligend with it's exchange
 
     string asset_id;            ///< unique id of the asset
     string exchange_id;         ///< unique id of the exchange the asset is on
     string broker_id;           ///< unique id of the broker the asset is listed on 
 
-    bool is_alligned;           ///< is the asset's datetime index alligend with it's exchange
-
     size_t open_column;         ///< index of the open column;
     size_t close_column;        ///< index of the close column
     size_t current_index;       ///< index of the current row the asset is at
 
-    /// @brief pointer to an index asset
-    optional<asset_sp_t> index_asset = nullopt;
+    optional<asset_sp_t> index_asset = nullopt; /// < pointer to an index asset
 
     /// @brief vector of tracers registered to the asset
     vector<shared_ptr<AssetTracer>> tracers;
@@ -129,7 +129,15 @@ public:
      * @param tracer_type type of tracer to search for
      * @return optional<shared_ptr<AssetTracer>> nullopt if not exists, else return shared pointer to the tracer
      */
-    optional<shared_ptr<AssetTracer>> get_tracer(AssetTracerType tracer_type);
+    optional<shared_ptr<AssetTracer>> get_tracer(AssetTracerType tracer_type) const;
+
+    /**
+     * @brief Get the value set be a specific tracer by type
+     * 
+     * @param tracer_type the type of tracer to get (not searching for, just deref appropriate pointer)
+     * @return current value of the tracer
+     */
+    double get_tracer_value(AssetTracerType tracer_type) const;
 
     /**
      * @brief build and add a new tracer object to the asset
@@ -219,9 +227,8 @@ public:
     /// @brief get read only numpy array of the asset's datetime index
     py::array_t<long long> get_datetime_index_view();
     
-    /// @brief get the current volatility of the asset
-    /// @return volatility of the asset
-    double get_volatility();
+    double get_volatility() const; ///< get the volatility of the asset 
+    double get_beta()       const; ///< get the beta of the assset
 
     size_t get_warmup(){return this->warmup;}
 
@@ -265,19 +272,26 @@ public:
      */
     void set_volatility(double* volatility_){this->volatility = volatility_;}
 
+    /**
+     * @brief Set the beta to point to an asset tracers value
+     * 
+     * @param beta_ pointer to the beta set by the tracer
+     */
+    void set_beta(double* beta_){this->beta = beta_;}
+
     /// step the asset forward in time
     void step();
 
 private:
     bool is_built = false;      ///< has the asset been built
-    bool is_view = false;       ///< does the asset own the underlying data pointer
+    bool is_view =  false;       ///< does the asset own the underlying data pointer
 
     /// @brief map between column name and column index
     std::unordered_map<string, size_t> headers;
 
-    long long *datetime_index; ///< datetime index of the asset (ns epoch time stamp)
-    double * data;             ///< underlying data of the asset
-    double * row;              ///< pointer to the current row
+    long long*  datetime_index; ///< datetime index of the asset (ns epoch time stamp)
+    double*     data;             ///< underlying data of the asset
+    double*     row;              ///< pointer to the current row
 
     size_t rows;       ///< number of rows in the asset data
     size_t cols;       ///< number of columns in the asset data
@@ -375,7 +389,7 @@ public:
     void step() override {}
 
     // pure virtual function to build the tracer
-    void build() override {};
+    void build() override;
 
     // pure virtual function to reset the tracer
     void reset() override {};
@@ -398,7 +412,7 @@ private:
     double sum_index = 0.0;            ///< Running sum of observations for variable index asset
     double sum_parent_squared = 0.0;   ///< Running sum of squared observations for variable parent asset
     double sum_index_squared = 0.0;    ///< Running sum of squared observations for variable index asset
-
+    double beta = 0.0;                 ///< beta of the parent asset
 };
 
 #endif // ARGUS_ASSET_H

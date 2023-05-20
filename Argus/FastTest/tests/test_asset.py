@@ -79,9 +79,9 @@ class AssetTestMethods(unittest.TestCase):
         length = 252
         df["returns"] = df["Close"].pct_change()
         df.dropna(inplace = True)
-        df["vol"] = df["returns"].rolling(length-1).std(ddof=0)
+        df["vol"] = df["returns"].rolling(length-1).var(ddof=0)
 
-        vol_2 = df["returns"].values[0:length-1].std(ddof=0)
+        vol_2 = df["returns"].values[0:length-1].var(ddof=0)
 
         vol = df["vol"].values[250]
         assert(abs(cpp_vol - vol) < 1e-6)

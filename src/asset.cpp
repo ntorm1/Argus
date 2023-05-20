@@ -249,25 +249,40 @@ double Asset::c_get(size_t column_index) const
     return *(this->row - this->cols + column_index);
 }
 
-double Asset::get_volatility()
+double Asset::get_tracer_value(AssetTracerType tracer_type) const
 {
-    if(!this->volatility.has_value())
+    auto tracer = this->get_tracer(tracer_type);
+    if(!tracer.has_value())
     {
-        // tracer exists but is not warm yet
-        if(this->get_tracer(AssetTracerType::Volatility).has_value())
+         ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+    }
+    switch (tracer_type)
+    {
+    case AssetTracerType::Volatility:
+        if(!this->volatility.has_value())
         {
             ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotWarm);
-
         }
-        // volatility tracer was never registered to the asset
-        else
+        return *this->volatility.value();
+    case AssetTracerType::Beta:
+        if(!this->beta.has_value())
         {
-            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotWarm);
         }
+        return *this->beta.value();
     }
-
-    return *this->volatility.value();
 }
+
+double Asset::get_volatility() const
+{   
+    return this->get_tracer_value(AssetTracerType::Volatility);
+}
+
+double Asset::get_beta() const
+{   
+    return this->get_tracer_value(AssetTracerType::Beta);
+}
+
 
 double Asset::get(const std::string &column, size_t row_index) const
 {
@@ -455,7 +470,7 @@ void Asset::step(){
     }
 }
 
-optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type){
+optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type) const{
     auto tracer = vector_get(
         this->tracers,
         [tracer_type](auto tracer) { return tracer->tracer_type() == tracer_type; }
@@ -577,8 +592,26 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmu
             parent_asset_->set_warmup(lookback_); 
         }
     }
-    
-    this->asset_window = init_array_window(parent_asset_, lookback);
+        
+    // set the index volatility data pointer
+    shared_ptr<AssetTracer> index_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility).value();
+    VolatilityTracer* index_vol = dynamic_cast<VolatilityTracer*>(index_tracer.get()); 
+    this->index_volatility = index_vol->get_volatility();
+}
+
+VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 
+        : AssetTracer(parent_asset_, lookback_)
+{
+    // allow for lookback to adjust the warmup needed for the asset
+    if(adjust_warmup && lookback_ > parent_asset_->get_warmup())
+    {
+        parent_asset_->set_warmup(lookback_); 
+    }
+}
+
+void BetaTracer::build()
+{
+    this->asset_window = init_array_window(this->parent_asset, lookback);
 
     // build the parent asset window
     auto t0 = this->parent_asset->get_datetime_index()[this->asset_window.start_ptr_index];
@@ -604,19 +637,39 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmu
         this->lookback
     );
 
-    // set the index volatility data pointer
-    shared_ptr<AssetTracer> index_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility).value();
-    VolatilityTracer* index_vol = dynamic_cast<VolatilityTracer*>(index_tracer.get()); 
-    this->index_volatility = index_vol->get_volatility();
-}
+    int i = 0;
+    auto it_asset = this->asset_window.begin();
+    auto it_parent = this->index_window.begin();
+    double previous_asset = *it_asset;
+    double previous_parent = *it_parent;
 
-VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 
-        : AssetTracer(parent_asset_, lookback_)
-{
-    // allow for lookback to adjust the warmup needed for the asset
-    if(adjust_warmup && lookback_ > parent_asset_->get_warmup())
+    if(it_asset != this->asset_window.end())
     {
-        parent_asset_->set_warmup(lookback_); 
+        it_asset++;
+        it_parent++;
+    }
+
+    for(; it_asset != this->asset_window.end(); it_asset++, it_parent++)
+    {
+        auto next_asset = *it_asset;
+        auto pct_change_asset = (next_asset - previous_asset) / previous_asset;
+
+        auto next_parent = *it_parent;
+        auto pct_change_index = (next_parent - previous_parent) / previous_parent;
+
+        this->sum_parent += pct_change_asset;
+        this->sum_index += pct_change_index;
+        this->sum_parent_squared += pct_change_asset * pct_change_asset;
+        this->sum_index_squared += pct_change_index * pct_change_index;
+        this->sum_products += pct_change_asset * pct_change_index;
+    }
+
+    // if the window is fully loaded set the volatility
+    if(this->parent_asset->current_index >= this->lookback)
+    {
+        this->beta = (this->sum_products - this->sum_parent * this->sum_index / this->lookback) 
+                    / (this->lookback - 1);
+        this->parent_asset->set_beta(&this->beta);
     }
 }
 
@@ -648,20 +701,16 @@ void VolatilityTracer::build()
     // if the window is fully loaded set the volatility
     if(this->parent_asset->current_index >= this->lookback)
     {
-        double variance = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
-        this->volatility =sqrt(variance);
+        this->volatility = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
         this->parent_asset->set_volatility(&this->volatility);
     }
 }
 
 void VolatilityTracer::step()
 {
-    double previous_value = *(this->asset_window.end_ptr -  this->asset_window.stride); 
-    double old_value = *this->asset_window.start_ptr;
-    
-    double old_pct = (*(this->asset_window.start_ptr + this->asset_window.stride) - old_value) / old_value;
-    double new_pct = (*this->asset_window.end_ptr - previous_value) / previous_value;
-    
+    double old_pct, new_pct;
+    std::tie(old_pct,new_pct) = this->asset_window.pct_change();
+
     this->asset_window.step();
 
     this->sum += new_pct;
@@ -672,8 +721,7 @@ void VolatilityTracer::step()
     {
         this->sum -= old_pct;
         this->sum_sqaures -= pow(old_pct,2);
-        double variance = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
-        this->volatility =sqrt(variance);    
+        this->volatility = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
     }
     // still accumulating values
     else
