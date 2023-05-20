@@ -92,11 +92,6 @@ string Asset::get_asset_id() const
     return this->asset_id;
 }
 
-bool Asset::get_is_built() const
-{
-    return this->is_built;
-}
-
 void Asset::load_headers(const vector<std::string> &columns)
 {
     auto column_indecies = parse_headers(columns);
@@ -258,7 +253,17 @@ double Asset::get_volatility()
 {
     if(!this->volatility.has_value())
     {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+        // tracer exists but is not warm yet
+        if(this->get_tracer(AssetTracerType::Volatility).has_value())
+        {
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotWarm);
+
+        }
+        // volatility tracer was never registered to the asset
+        else
+        {
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+        }
     }
 
     return *this->volatility.value();
@@ -344,11 +349,11 @@ py::array_t<double> Asset::get_column(const string& column_name, size_t length)
     return py::array( 
         py::buffer_info
             (
-                column_start,                               /* Pointer to buffer */
-                sizeof(double),                          /* Size of one scalar */
-                py::format_descriptor<double>::format(), /* Python struct-style format descriptor */
+                column_start,                           /* Pointer to buffer */
+                sizeof(double),                         /* Size of one scalar */
+                py::format_descriptor<double>::format(),/* Python struct-style format descriptor */
                 1,                                      /* Number of dimensions */
-                { length },                 /* Buffer dimensions */
+                { length },                             /* Buffer dimensions */
                 { sizeof(double) * this->cols}
             )
     );
@@ -460,6 +465,11 @@ optional<shared_ptr<AssetTracer>> Asset::get_tracer(AssetTracerType tracer_type)
 
 void Asset::add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup)
 {
+    // as of now each tracer must have unique type
+    if(this->get_tracer(tracer_type).has_value())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+    }
     switch (tracer_type)
     {
     case AssetTracerType::Volatility:
@@ -525,7 +535,7 @@ AssetTracer::AssetTracer(Asset* parent_asset_, size_t lookback_) :
     }
 }
 
-BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_) 
+BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup_) 
         : AssetTracer(parent_asset_, lookback_)
 {
     // asset must have a index linked to it 
@@ -543,8 +553,32 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidAssetFrequency);
     }
+
+    // the index asset must have a volatility tracer registered to it
+    auto index_vol_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility);
+    if(index_vol_tracer.has_value())
+    {
+        if(index_vol_tracer.value()->lookback != lookback_)
+        {
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+        }   
+    }
+    else
+    {
+        this->index_asset->add_tracer(AssetTracerType::Volatility, lookback_, adjust_warmup_);
+    }
+
+    // allow for lookback to adjust the warmup needed for the asset
+    if(adjust_warmup_)
+    {   
+        //TODO multiple tracers setting different warmups?
+        if( lookback_ > parent_asset_->get_warmup())
+        {
+            parent_asset_->set_warmup(lookback_); 
+        }
+    }
     
-    this->asset_window =  init_array_window(parent_asset_, lookback);
+    this->asset_window = init_array_window(parent_asset_, lookback);
 
     // build the parent asset window
     auto t0 = this->parent_asset->get_datetime_index()[this->asset_window.start_ptr_index];
@@ -559,7 +593,9 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
     assert(index_start.has_value());
 
     // get pointer to the index starting position
-    double* index_start_ptr = this->index_asset->get_data() + (index_start.value()*index_asset->get_cols());
+    double* index_start_ptr = this->index_asset->get_data() // pointer to the start
+        + (index_start.value()*index_asset->get_cols())     // move pointer to correct row
+        + index_asset->close_column;                        // move poitner to close column
 
     // build the window into the index asset
     this->index_window = ArrayWindow<double>(
@@ -568,35 +604,31 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_)
         this->lookback
     );
 
-    //TODO
-    auto index_vol_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility);
-    if(!index_vol_tracer.has_value())
-    {
-        //shared_ptr<VolatilityTracer> tracer = std::make_shared<VolatilityTracer>(this->parent_asset, this->lookback); 
-        //this->index_volatility = &index_vol_tracer.value()->volatility;
-    }
-    else
-    {
-        
-    }
+    // set the index volatility data pointer
+    shared_ptr<AssetTracer> index_tracer = this->index_asset->get_tracer(AssetTracerType::Volatility).value();
+    VolatilityTracer* index_vol = dynamic_cast<VolatilityTracer*>(index_tracer.get()); 
+    this->index_volatility = index_vol->get_volatility();
 }
 
 VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup) 
         : AssetTracer(parent_asset_, lookback_)
 {
-    // if the asset hasn't been built yet, allow for lookback to adjust the warmup needed for the asset
+    // allow for lookback to adjust the warmup needed for the asset
     if(adjust_warmup && lookback_ > parent_asset_->get_warmup())
     {
         parent_asset_->set_warmup(lookback_); 
     }
+}
 
+void VolatilityTracer::build()
+{
     // build the asset window
-    this->asset_window = init_array_window(parent_asset_, lookback);
+    this->asset_window = init_array_window(this->parent_asset, lookback);
 
     // volatility calculations given the passed data
-    double previous = *this->asset_window.begin();
     int i = 0;
     auto it = this->asset_window.begin();
+    double previous = *it;
 
     if(it != this->asset_window.end())
     {
@@ -613,28 +645,24 @@ VolatilityTracer::VolatilityTracer(Asset* parent_asset_, size_t lookback_, bool 
         i++;
     }
 
-    // note i not i + 1 to get unbiased estimator
-    this->mean = this->sum / i;
-
     // if the window is fully loaded set the volatility
-    if(parent_asset_->current_index >= lookback_)
+    if(this->parent_asset->current_index >= this->lookback)
     {
-        this->volatility =sqrt((this->sum_sqaures / this->lookback) - pow(this->mean, 2));
+        double variance = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
+        this->volatility =sqrt(variance);
         this->parent_asset->set_volatility(&this->volatility);
     }
 }
 
 void VolatilityTracer::step()
 {
-    double previous_value = *this->asset_window.end_ptr; 
+    double previous_value = *(this->asset_window.end_ptr -  this->asset_window.stride); 
     double old_value = *this->asset_window.start_ptr;
+    
     double old_pct = (*(this->asset_window.start_ptr + this->asset_window.stride) - old_value) / old_value;
-
-    // move ptrs forward
-    this->asset_window.step();
-
-    // new value is the pct change since the previous
     double new_pct = (*this->asset_window.end_ptr - previous_value) / previous_value;
+    
+    this->asset_window.step();
 
     this->sum += new_pct;
     this->sum_sqaures += pow(new_pct, 2);
@@ -644,8 +672,8 @@ void VolatilityTracer::step()
     {
         this->sum -= old_pct;
         this->sum_sqaures -= pow(old_pct,2);
-        this->mean = this->sum / (this->lookback-1);
-        this->volatility = sqrt((this->sum_sqaures / this->lookback) - pow(this->mean, 2));
+        double variance = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
+        this->volatility =sqrt(variance);    
     }
     // still accumulating values
     else

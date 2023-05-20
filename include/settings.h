@@ -20,10 +20,12 @@ static double constexpr ARGUS_MP_PORTFOLIO_MAX_LEVERAGE = 1.75;
 
 enum ArgusErrorCode {
   NotImplemented,
+  NotWarm,
   NotBuilt,
+  AlreadyBuilt,
 
   IndexOutOfBounds,
-
+  
   InvalidTracerType,
   InvalidAssetFrequency,
   InvalidTracerAsset,
@@ -36,8 +38,10 @@ enum ArgusErrorCode {
 
 static const std::string EnumStrings[] = 
 {
-  "Not implemented"
+  "Not implemented",
+  "Not Warm"
   "Object is not built",
+  "Object is already built",
 
   "Index Out of Bounds Error",
 

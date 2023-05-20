@@ -161,7 +161,7 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
     return asset;
 }
 
-void Exchange::register_index(const asset_sp_t &asset_)
+void Exchange::register_index_asset(const asset_sp_t &asset_)
 {
     // exchange must be built before registering a index asset
     if(!this->is_built)
@@ -196,7 +196,7 @@ void Exchange::register_index(const asset_sp_t &asset_)
 
     for(auto& asset_pair : this->market)
     {   
-        asset_pair.second->register_index_asset(this->index_asset.value());
+        asset_pair.second->register_index_asset(asset_);
     }
 }
 
@@ -463,7 +463,7 @@ bool Exchange::get_market_view()
         }
 
         // get the asset's current time and id
-        auto asset_datetime = asset_raw_pointer->get_asset_time();
+        long long* asset_datetime = asset_raw_pointer->get_asset_time();
         auto asset_id = asset_raw_pointer->get_asset_id(); 
         if (asset_datetime && *asset_datetime == this->exchange_time)
         {   

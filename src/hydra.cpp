@@ -106,6 +106,7 @@ void Hydra::build()
     if (this->is_built)
     {
         delete[] this->datetime_index;
+        this->reset(true, false);
     }
     if (this->exchange_map->exchanges.empty())
     {

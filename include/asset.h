@@ -55,29 +55,17 @@ public:
     /// asset destructor
     ~Asset();
 
-    /// @brief the frequency of the asset rows (1D, 1H, etc..)
-    AssetFrequency frequency;
+    AssetFrequency frequency;   ///< the frequency of the asset rows (1D, 1H, etc..)
 
-    /// @brief unique id of the asset
-    string asset_id;
+    string asset_id;            ///< unique id of the asset
+    string exchange_id;         ///< unique id of the exchange the asset is on
+    string broker_id;           ///< unique id of the broker the asset is listed on 
 
-    /// @brief unique id of the exchange the asset is on
-    string exchange_id;
+    bool is_alligned;           ///< is the asset's datetime index alligend with it's exchange
 
-    /// @brief unique id of the broker the asset is listed on 
-    string broker_id;
-
-    /// @brief is the asset's datetime index alligend with it's exchange
-    bool is_alligned;
-
-    /// @brief index of the open column;
-    size_t open_column;
-
-    /// @brief index of the close column
-    size_t close_column;
-
-    /// @brief index of the current row the asset is at
-    size_t current_index;
+    size_t open_column;         ///< index of the open column;
+    size_t close_column;        ///< index of the close column
+    size_t current_index;       ///< index of the current row the asset is at
 
     /// @brief pointer to an index asset
     optional<asset_sp_t> index_asset = nullopt;
@@ -100,10 +88,16 @@ public:
      */
     void register_index_asset(asset_sp_t index_asset_){this->index_asset = index_asset_;};
 
-    /// reset asset to start of data
+    /**
+     * @brief reset the asset to the begining of it's data
+     * 
+     */
     void reset_asset();
 
-    /// @brief  build the asset
+    /**
+     * @brief build an asset and it's corresponding tracers
+     * 
+     */
     void build();
 
     /**
@@ -172,8 +166,7 @@ public:
      */
     double* get_data() {return this->data;};
 
-    /// test if the function is built
-    [[nodiscard]] bool get_is_built() const;
+    [[nodiscard]] bool get_is_built() const {return this->is_built;};
 
     /**
      * @brief load in the headers from a vector of strings and assign them size_t indexs
@@ -276,38 +269,22 @@ public:
     void step();
 
 private:
-    /// @brief has the asset been built
-    bool is_built = false;
-
-    /// @brief does the asset own the underlying data pointer
-    bool is_view = false;
+    bool is_built = false;      ///< has the asset been built
+    bool is_view = false;       ///< does the asset own the underlying data pointer
 
     /// @brief map between column name and column index
     std::unordered_map<string, size_t> headers;
 
-    /// @brief index of the asset (ns epoch time stamp)
-    long long *datetime_index;
+    long long *datetime_index; ///< datetime index of the asset (ns epoch time stamp)
+    double * data;             ///< underlying data of the asset
+    double * row;              ///< pointer to the current row
 
-    /// @brief underlying data of the asset
-    double * data;
+    size_t rows;       ///< number of rows in the asset data
+    size_t cols;       ///< number of columns in the asset data
+    size_t warmup = 0; ///< warmup period, i.e. number of rows to skip
 
-    /// @brief pointer to the current row
-    double * row;
-
-    /// @brief number of rows in the asset data
-    size_t rows;
-
-    /// @brief number of columns in the asset data
-    size_t cols;
-
-    /// @brief warmup period, i.e. number of rows to skip
-    size_t warmup = 0;
-
-    /// @brief optional pointer to a voltaility tracer's value
-    optional<double*> volatility = nullopt;
-
-    /// @brief optional pointer to a beta tracer's value
-    optional<double*> beta = nullopt;
+    optional<double*> volatility = nullopt; ///< optional pointer to a voltaility tracer's value
+    optional<double*> beta       = nullopt; ///< optional pointer to a beta tracer's value
 };
 
 /// function for creating a shared pointer to a asset
@@ -329,6 +306,9 @@ public:
 
     /// Asset Tracer default destructor 
     virtual ~AssetTracer() = default;
+
+    /// @brief size of the lookback window of tracer
+    size_t lookback;
 
     /**
      * @brief Get the type of the tracer
@@ -353,10 +333,6 @@ protected:
     /// @brief pointer to the parent asset of the tracer
     Asset* parent_asset;
 
-    /// @brief size of the lookback window of tracer
-    size_t lookback;
-
-
 };
 
 class VolatilityTracer : public AssetTracer
@@ -371,15 +347,16 @@ public:
     void step() override;
 
     // pure virtual function to build the tracer
-    void build() override {};
+    void build() override;
 
     // pure virtual function to reset the tracer
     void reset() override {};
 
+    double* get_volatility(){return &this->volatility;}
+
     double volatility = 0;
     double sum_sqaures = 0.0;
     double sum = 0.0 ;
-    double mean = 0;
 
 private:
     /// @brief array window into the asset's close column
@@ -389,7 +366,7 @@ private:
 class BetaTracer : AssetTracer
 {
 public:
-    BetaTracer(Asset* parent_asset_, size_t lookback_);
+    BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup = false);
 
     //Type of the tracer
     AssetTracerType tracer_type() const override {return AssetTracerType::Beta;}
@@ -415,6 +392,12 @@ private:
 
     /// index asset window
     Argus::ArrayWindow<double> index_window;
+
+    double sum_products = 0.0;         ///< Running sum of products
+    double sum_parent = 0.0;           ///< Running sum of observations for variable parent asset
+    double sum_index = 0.0;            ///< Running sum of observations for variable index asset
+    double sum_parent_squared = 0.0;   ///< Running sum of squared observations for variable parent asset
+    double sum_index_squared = 0.0;    ///< Running sum of squared observations for variable index asset
 
 };
 

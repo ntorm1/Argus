@@ -1,6 +1,7 @@
 
 import sys
 import os
+import time
 import unittest
 import pandas as pd
 
@@ -67,6 +68,9 @@ class AssetTestMethods(unittest.TestCase):
         assert(spy is not None)
 
         spy.add_tracer(AssetTracerType.VOLATILITY, 252, True)
+
+        hydra.build()
+
         cpp_vol = spy.get_volatility()
 
         df = pd.read_csv(helpers.test_spy_file_path)
@@ -74,31 +78,22 @@ class AssetTestMethods(unittest.TestCase):
 
         length = 252
         df["returns"] = df["Close"].pct_change()
-        df["vol"] = df["Close"].pct_change().rolling(length).std(ddof=1)
+        df.dropna(inplace = True)
+        df["vol"] = df["returns"].rolling(length-1).std(ddof=0)
 
-        _sum = df["returns"].head(length).sum()
-        mean = df["returns"].head(length).sum() / (length - 1)
-        sos = (df["returns"].head(length)**2).sum()
-        vol = ((sos / length) - mean**2)**(.5)
+        vol_2 = df["returns"].values[0:length-1].std(ddof=0)
 
-        assert((cpp_vol - vol) < 1e-10)
-
-        hydra.build()
+        vol = df["vol"].values[250]
+        assert(abs(cpp_vol - vol) < 1e-6)
         
         hydra.forward_pass()
         hydra.on_open()
         hydra.backward_pass()
-        
-        # 2 because first is NAN
-        df = df.iloc[2:]
 
-        _sum = df["returns"].head(length).sum()
-        mean = df["returns"].head(length).sum() / (length - 1)
-        sos = (df["returns"].head(length)**2).sum()
-        vol = ((sos / length) - mean**2)**(.5)
+        vol = df["vol"].values[251]
 
         cpp_vol = spy.get_volatility()
-        assert((cpp_vol - vol) < 1e-10)
+        assert(abs(cpp_vol - vol) < 1e-6)
                 
 if __name__ == '__main__':
     unittest.main()

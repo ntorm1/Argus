@@ -66,11 +66,19 @@ public:
     /// build the market view, return false if all assets listed are done streaming
     bool get_market_view();
 
-    /// @brief register a new index asset for the exchange
-    /// @param index smart pointer to asset reprenting the index
-    void register_index(const asset_sp_t &index);
+    /**
+     * @brief register a new index asset to the exchange. Index asset must have the same datetime
+     *  index as the exchange and is used to set the beta of indivual asset's listed on the exchange.
+     *  Once registered, the exchange will link it to each asset currently registered on the exchange
+     * 
+     * @param index an asset object to register as the exchange's index
+     */
+    void register_index_asset(const asset_sp_t &index);
 
-    /// move all assets that have expired out of the market
+    /**
+     * @brief move assets that have expired in the last time step out of the market and market view
+     * 
+     */
     void move_expired_assets();
 
     /**

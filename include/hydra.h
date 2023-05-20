@@ -29,7 +29,7 @@ private:
     int logging;
 
     /// is the hydra built
-    bool is_built{};
+    bool is_built;
 
     /// mapping between broker id and portfolio held at broker
     portfolio_sp_t master_portfolio;
