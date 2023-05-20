@@ -94,6 +94,9 @@ class AssetTestMethods(unittest.TestCase):
 
         cpp_vol = spy.get_volatility()
         assert(abs(cpp_vol - vol) < 1e-6)
-                
+
+    def test_beta_tracer(self):
+
+        return
 if __name__ == '__main__':
     unittest.main()

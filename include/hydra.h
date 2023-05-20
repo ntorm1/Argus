@@ -185,6 +185,15 @@ public:
      */
     void register_asset(const asset_sp_t &asset, const string & exchange_id);
 
+    /**
+     * @brief register a new index asset to an exhcnage or all exchanges
+     * 
+     * @param asset         index asset to register
+     * @param exchange_id   unique id of the exchange to register to, if none passed then registers to all
+     */
+    void register_index_asset(const asset_sp_t &asset, string exchange_id = "");
+    
+
 };
 
 /// function for creating a shared pointer to a hydra

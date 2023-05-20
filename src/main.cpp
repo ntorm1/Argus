@@ -32,6 +32,7 @@ void init_asset_ext(py::module &m)
         .def("get_mem_address", &Asset::get_mem_address)
         .def("get_column", &Asset::get_column)
         .def("get_volatility", &Asset::get_volatility)
+        .def("get_beta", &Asset::get_beta)
         .def("get_datetime_index_view",
              &Asset::get_datetime_index_view,
              py::return_value_policy::reference)
@@ -89,6 +90,9 @@ void init_hydra_ext(py::module &m)
             py::arg("steps") = 0,
             py::arg("to") = 0)
         .def("register_asset", &Hydra::register_asset)
+        .def("register_index_asset", &Hydra::register_index_asset,
+            py::arg("asset"),
+            py::arg("exchange_id") = "")
         .def("reset_strategies", &Hydra::reset_strategies)
         .def("reset", &Hydra::reset,
             py::arg("clear_history") = true,

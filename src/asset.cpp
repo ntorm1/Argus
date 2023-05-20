@@ -69,15 +69,22 @@ void Asset::reset_asset()
 
 void Asset::build()
 {
+    // asset data be loaded before building
+    if(!this->get_is_loaded())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+    // build the indivual tracers
     for(auto& tracer : this->tracers)
     {   
         tracer->build();
     }
+    this->is_built = true;
 }
 
 void Asset::set_warmup(size_t warmup_)
 {
-    if(!this->is_built)
+    if(!this->is_loaded)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
@@ -203,8 +210,8 @@ void Asset::load_data(const double *data_, const long long *datetime_index_, siz
     //set row pointer to first row 
     this->row = &this->data[this->warmup * this->cols];
 
-    // set build flag to true after copying data
-    this->is_built = true;
+    // set load flag to true after copying data
+    this->is_loaded = true;
 
 #ifdef DEBUGGING
     printf("MEMORY:   asset %s datetime index at: %p \n", this->asset_id.c_str(), this->datetime_index);
@@ -538,13 +545,8 @@ ArrayWindow<double> init_array_window(Asset* asset, size_t lookback)
 AssetTracer::AssetTracer(Asset* parent_asset_, size_t lookback_) :
     parent_asset(parent_asset_), lookback(lookback_)
 {   
-    // asset must be built before adding a tracer to it
-    if(!parent_asset_->get_is_built())
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
-    }
     // make sure the lookback period is not greater than the number of rows loaded
-    if(parent_asset->get_rows() < lookback)
+    if(this->parent_asset->get_rows() < lookback)
     {   
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }

@@ -152,6 +152,28 @@ void Hydra::register_asset(const asset_sp_t &asset_, const string & exchange_id_
     this->exchange_map->register_asset(asset_, exchange_id_);
 }
 
+void Hydra::register_index_asset(const asset_sp_t &asset_, string exchange_id_)
+{   
+    if(exchange_id_ != "")
+    {
+        auto exchange = this->exchange_map->get_exchange(exchange_id_);
+        if(!exchange.has_value())
+        {
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
+        }
+        exchange.value()->register_index_asset(asset_);
+    }
+    else
+    {
+        for(auto& exchange_pair : this->exchange_map->exchanges)
+        {
+            exchange_pair.second->register_index_asset(asset_);
+        }
+    }
+}
+
+
+
 optional<asset_sp_t> Hydra::get_asset(const string& asset_id_)
 {
     return this->exchange_map->get_asset(asset_id_);

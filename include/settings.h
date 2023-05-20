@@ -23,6 +23,7 @@ enum ArgusErrorCode {
   NotWarm,
   NotBuilt,
   AlreadyBuilt,
+  AlreadyExists,
 
   IndexOutOfBounds,
   
@@ -42,6 +43,7 @@ static const std::string EnumStrings[] =
   "Not Warm"
   "Object is not built",
   "Object is already built",
+  "Object already exists",
 
   "Index Out of Bounds Error",
 

@@ -18,6 +18,8 @@
 using namespace std;
 
 using asset_sp_t = Asset::asset_sp_t;
+using exchange_sp_t = Exchange::exchange_sp_t;
+
 
 Exchange::Exchange(std::string exchange_id_, int logging_) : exchange_id(std::move(exchange_id_)),
                                                              is_built(false),
@@ -168,26 +170,20 @@ void Exchange::register_index_asset(const asset_sp_t &asset_)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
+    if(this->index_asset.has_value())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyExists);
+    }
 
     // if index asset is registered then make sure it is valid. It must contain the datetime
-    // indexs of each asset listed on the exchange, i.e. equal to the exchange datetime index
-    if(asset_->get_rows() != this->datetime_index_length)
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayLength);
-    }
-
-    auto dt_index = asset_->get_datetime_index(); 
-    bool are_same = true;   
-    for(int i = 0; i < this->datetime_index_length; i++)
-    {
-        if(dt_index[i] != this->datetime_index[i])
-        {
-            are_same = false;
-            break;
-        }
-    }
-
-    if(!are_same)
+    // indexs of each asset listed on the exchange, i.e. contains the exchange datetime index
+    bool valid_index_asset = array_contains(
+        asset_->get_datetime_index(),
+        this->datetime_index,
+        asset_->get_rows(),
+        this->get_rows()
+    );
+    if(!valid_index_asset)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayValues);
     }
@@ -239,6 +235,18 @@ optional<asset_sp_t> ExchangeMap::get_asset(const string& asset_id_)
     else
     {
         return this->asset_map.at(asset_id_);
+    }
+}
+
+optional<exchange_sp_t> ExchangeMap::get_exchange(const string& exchange_id_)
+{
+    if(!this->exchanges.contains(exchange_id_))
+    {
+        return nullopt;
+    }
+    else
+    {
+        return this->exchanges.at(exchange_id_);
     }
 }
 

@@ -174,7 +174,8 @@ public:
      */
     double* get_data() {return this->data;};
 
-    [[nodiscard]] bool get_is_built() const {return this->is_built;};
+    [[nodiscard]] bool get_is_built()  const {return this->is_built;};
+    [[nodiscard]] bool get_is_loaded() const {return this->is_loaded;};
 
     /**
      * @brief load in the headers from a vector of strings and assign them size_t indexs
@@ -283,8 +284,9 @@ public:
     void step();
 
 private:
-    bool is_built = false;      ///< has the asset been built
-    bool is_view =  false;       ///< does the asset own the underlying data pointer
+    bool is_loaded = false;     ///< has the asset data been loaded in   
+    bool is_built  = false;     ///< has the asset been built
+    bool is_view  =  false;     ///< does the asset own the underlying data pointer
 
     /// @brief map between column name and column index
     std::unordered_map<string, size_t> headers;

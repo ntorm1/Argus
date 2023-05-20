@@ -94,6 +94,33 @@ def create_spy_hal(logging: int = 0, cash: float = 100000) -> Hal:
 
     return hal
 
+def create_beta_hal(logging: int = 0, cash: float = 100000) -> Hal:
+    hal = Hal(logging, cash)
+    hydra = hal.get_hydra()
+    broker = hal.new_broker(test1_broker_id,cash)
+    exchange = hal.new_exchange(test1_exchange_id)
+
+    dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+    data_path = os.path.join(dir_path, "SP500_D")
+    file_list = [os.path.join(data_path, f) for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f))]
+    
+    for _file in file_list[0:2]:
+        _file_base = os.path.basename(_file)
+        asset_id = os.path.splitext(_file_base)[0]
+        
+        df = pd.read_feather(_file)
+        df["Date"] = df["Date"] * 1e9
+        df.set_index("Date", inplace=True)        
+        hal.register_asset_from_df(df, asset_id, test1_exchange_id, test1_broker_id, warmup = 0)
+        
+    df = pd.read_csv(test_spy_file_path)
+    df.set_index("Date", inplace=True)
+    df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)
+    asset = asset_from_df(df, "SPY", test1_exchange_id, test1_broker_id)
+
+    hydra.register_index_asset(asset, test1_exchange_id)
+    return hal
+
 def create_big_hal(logging: int = 0, cash: float = 0) -> Hal:
     hal = Hal(logging, cash)
     broker = hal.new_broker(test1_broker_id,100000.0)

@@ -222,6 +222,7 @@ public:
     typedef shared_ptr<ExchangeMap> exchanges_sp_t;
 
     using asset_sp_t = Asset::asset_sp_t;
+    using exchange_sp_t = Exchange::exchange_sp_t;
 
     /// mapping between exchange id and exchange object
     Exchanges exchanges;
@@ -247,6 +248,14 @@ public:
      * @return optional<asset_sp_t>     existing asset, none if not exists
      */
     optional<asset_sp_t> get_asset(const string& asset_id_);
+
+    /**
+     * @brief get an existing exchange on the exchange map
+     * 
+     * @param exchange_id_              unique id of the exchange to look for
+     * @return optional<asset_sp_t>     existing exchange, none if not exists
+     */
+    optional<exchange_sp_t> get_exchange(const string& exchange_id_);
 
     /// get market price of asset
     double get_market_price(const string& asset_id);
