@@ -81,6 +81,23 @@ void Exchange::build()
         asset->build();
     }
 
+    // if index asset is registered then make sure it is valid. It must contain the datetime
+    // indexs of each asset listed on the exchange, i.e. contains the exchange datetime index
+    if(this->index_asset.has_value())
+    {
+        auto asset_ = this->index_asset.value();
+        bool valid_index_asset = array_contains(
+            asset_->get_datetime_index(),
+            this->datetime_index,
+            asset_->get_rows(),
+            this->get_rows()
+        );
+        if(!valid_index_asset)
+        {
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayValues);
+        }
+    }
+
     this->is_built = true;
 
 #ifdef DEBUGGING
@@ -165,27 +182,9 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
 
 void Exchange::register_index_asset(const asset_sp_t &asset_)
 {
-    // exchange must be built before registering a index asset
-    if(!this->is_built)
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
-    }
     if(this->index_asset.has_value())
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyExists);
-    }
-
-    // if index asset is registered then make sure it is valid. It must contain the datetime
-    // indexs of each asset listed on the exchange, i.e. contains the exchange datetime index
-    bool valid_index_asset = array_contains(
-        asset_->get_datetime_index(),
-        this->datetime_index,
-        asset_->get_rows(),
-        this->get_rows()
-    );
-    if(!valid_index_asset)
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayValues);
     }
 
     this->index_asset = asset_;
@@ -214,6 +213,14 @@ void Exchange::register_asset(const shared_ptr<Asset>& asset_)
     }
 }
 
+void Exchange::add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup)
+{
+    for(auto& asset_pair : this->market)
+    {
+        asset_pair.second->add_tracer(tracer_type, lookback, adjust_warmup);
+    }
+}
+
 void ExchangeMap::register_asset(const shared_ptr<Asset> &asset_, const string& exchange_id)
 {
     string asset_id = asset_->get_asset_id();
@@ -225,6 +232,7 @@ void ExchangeMap::register_asset(const shared_ptr<Asset> &asset_, const string& 
     // add asset to the exchange map's own map
     this->asset_map.emplace(asset_id, asset_);
 }
+
 
 optional<asset_sp_t> ExchangeMap::get_asset(const string& asset_id_)
 {

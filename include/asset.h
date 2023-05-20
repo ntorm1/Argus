@@ -139,14 +139,6 @@ public:
      */
     double get_tracer_value(AssetTracerType tracer_type) const;
 
-    /**
-     * @brief build and add a new tracer object to the asset
-     * 
-     * @param tracer_type type of tracer to add
-     * @param lookback    lookback of the tracer
-     */
-    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup = false);
-
     /// @brief get a pointer to the current row of the asset
     /// @return const pointer to the underlying row data
     double * get_row() const {return this->row;}
@@ -280,6 +272,14 @@ public:
      */
     void set_beta(double* beta_){this->beta = beta_;}
 
+    /**
+     * @brief build and add a new tracer object to the asset
+     * 
+     * @param tracer_type type of tracer to add
+     * @param lookback    lookback of the tracer
+     */
+    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup = false);
+
     /// step the asset forward in time
     void step();
 
@@ -291,13 +291,13 @@ private:
     /// @brief map between column name and column index
     std::unordered_map<string, size_t> headers;
 
-    long long*  datetime_index; ///< datetime index of the asset (ns epoch time stamp)
-    double*     data;             ///< underlying data of the asset
-    double*     row;              ///< pointer to the current row
+    long long*  datetime_index = nullptr;   ///< datetime index of the asset (ns epoch time stamp)
+    double*     data           = nullptr;   ///< underlying data of the asset
+    double*     row            = nullptr;   ///< pointer to the current row
 
-    size_t rows;       ///< number of rows in the asset data
-    size_t cols;       ///< number of columns in the asset data
-    size_t warmup = 0; ///< warmup period, i.e. number of rows to skip
+    size_t rows = 0;        ///< number of rows in the asset data
+    size_t cols = 0;        ///< number of columns in the asset data
+    size_t warmup = 0;      ///< warmup period, i.e. number of rows to skip
 
     optional<double*> volatility = nullopt; ///< optional pointer to a voltaility tracer's value
     optional<double*> beta       = nullopt; ///< optional pointer to a beta tracer's value
@@ -379,7 +379,7 @@ private:
     Argus::ArrayWindow<double> asset_window;
 };
 
-class BetaTracer : AssetTracer
+class BetaTracer : public AssetTracer
 {
 public:
     BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmup = false);

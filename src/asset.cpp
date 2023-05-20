@@ -84,9 +84,20 @@ void Asset::build()
 
 void Asset::set_warmup(size_t warmup_)
 {
+    // data must be loaded before setting the warmup 
     if(!this->is_loaded)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+    // cannot adjust the warmup once the asset is built
+    if(this->is_built)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyBuilt);
+    }
+    // error if attempting to set warmup less than current warmup or greater than number of rows
+    if(warmup_ < this->warmup || warmup_ >= this->rows)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidWarmup);
     }
     // move the asset forward forward #warmup rows 
     this->warmup = warmup_;
@@ -494,14 +505,20 @@ void Asset::add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust
     }
     switch (tracer_type)
     {
-    case AssetTracerType::Volatility:
-    {
-        auto new_tracer = std::make_shared<VolatilityTracer>(this, lookback, adjust_warmup);
-        this->tracers.push_back(new_tracer);
-        break;
-    }
-    default:
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotImplemented);
+        case AssetTracerType::Volatility:
+        {
+            auto new_tracer = std::make_shared<VolatilityTracer>(this, lookback, adjust_warmup);
+            this->tracers.push_back(new_tracer);
+            break;
+        }
+        case AssetTracerType::Beta:
+        {
+            auto new_tracer = std::make_shared<BetaTracer>(this, lookback, adjust_warmup);
+            this->tracers.push_back(new_tracer);
+            break;    
+        }
+        default:
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotImplemented);
     }
 }
 

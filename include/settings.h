@@ -27,6 +27,7 @@ enum ArgusErrorCode {
 
   IndexOutOfBounds,
   
+  InvalidWarmup,
   InvalidTracerType,
   InvalidAssetFrequency,
   InvalidTracerAsset,
@@ -40,19 +41,20 @@ enum ArgusErrorCode {
 static const std::string EnumStrings[] = 
 {
   "Not implemented",
-  "Not Warm"
+  "Not Warm",
   "Object is not built",
   "Object is already built",
   "Object already exists",
 
   "Index Out of Bounds Error",
 
-  "Invalid tracer type"
+  "Invalid warmup",
+  "Invalid tracer type",
   "Invalid asset frequency",
   "Invalid tracer asset passed",
   "Invalid data request",
   "Invalid datetime passed",
-  "Invalid id passed"
+  "Invalid id passed",
   "Invalid array length",
   "Invalid array values"
 };

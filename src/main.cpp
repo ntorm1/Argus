@@ -59,7 +59,7 @@ void init_exchange_ext(py::module &m)
     py::class_<Exchange, std::shared_ptr<Exchange>>(m, "Exchange")
         .def("build", &Exchange::build)
         .def("new_asset", &Exchange::new_asset)
-        
+
         .def("get_asset", &Exchange::get_asset, py::return_value_policy::reference)
         .def("get_exchange_feature", 
             &Exchange::get_exchange_feature, 
@@ -74,7 +74,11 @@ void init_exchange_ext(py::module &m)
             py::arg("column_name"),
             py::arg("index") = 0)
 
-        .def("get_datetime_index_view", &Exchange::get_datetime_index_view);
+        .def("get_datetime_index_view", &Exchange::get_datetime_index_view)
+        .def("add_tracer", &Exchange::add_tracer),
+            py::arg("tracer_type"),
+            py::arg("lookback"),
+            py::arg("adjust_warmup") = false;
 }
 
 void init_hydra_ext(py::module &m)

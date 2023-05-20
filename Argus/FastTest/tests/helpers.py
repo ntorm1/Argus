@@ -112,7 +112,9 @@ def create_beta_hal(logging: int = 0, cash: float = 100000) -> Hal:
         df["Date"] = df["Date"] * 1e9
         df.set_index("Date", inplace=True)        
         hal.register_asset_from_df(df, asset_id, test1_exchange_id, test1_broker_id, warmup = 0)
-        
+
+    #hal.build()
+
     df = pd.read_csv(test_spy_file_path)
     df.set_index("Date", inplace=True)
     df.set_index(pd.to_datetime(df.index).astype(np.int64), inplace=True)

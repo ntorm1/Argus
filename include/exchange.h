@@ -82,6 +82,15 @@ public:
     void move_expired_assets();
 
     /**
+     * @brief add a new tracer to all assets listed on the exchange
+     * 
+     * @param tracer_type       type of tracer to add
+     * @param lookback          lookback of the tracer
+     * @param adjust_warmup     wether to adjust the asset's warmup
+     */
+    void add_tracer(AssetTracerType tracer_type, size_t lookback, bool adjust_warmup);
+
+    /**
      * @brief get a list of asset's that have expired in the current time step
      *  An asset expires when it reaches the end of it's datetime index
      * @return optional<vector<asset_sp_t>*> optional pointer to vector of assets, None if no assets expired.

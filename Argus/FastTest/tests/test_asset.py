@@ -96,6 +96,12 @@ class AssetTestMethods(unittest.TestCase):
         assert(abs(cpp_vol - vol) < 1e-6)
 
     def test_beta_tracer(self):
+        hal = helpers.create_beta_hal()
+        hydra = hal.get_hydra()
+
+        exchange = hydra.get_exchange(helpers.test1_exchange_id)
+        exchange.add_tracer(AssetTracerType.BETA, 252, True)
+
 
         return
 if __name__ == '__main__':
