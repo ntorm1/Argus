@@ -147,17 +147,19 @@ public:
     /// @return number of rows remaining, including the current one
     size_t get_rows_remaining() const{return this->rows - this->current_index - 1;}
     
-    /// return the number of rows in the asset
-    [[nodiscard]] size_t get_rows() const { return this->rows; }
-
-    /// return the number of columns in the asset
-    [[nodiscard]] size_t get_cols() const { return this->cols; }
-
-    /// return the id of an asset
-    [[nodiscard]] string get_asset_id() const;
+    [[nodiscard]] size_t get_rows() const { return this->rows; } ///< return the number of rows in the asset
+    [[nodiscard]] size_t get_cols() const { return this->cols; } ///< return the number of columns in the asset
+    [[nodiscard]] string get_asset_id() const;                   ///< return the id of an asset
 
     /// return pointer to the first element of the datetime index;
     [[nodiscard]] long long *get_datetime_index(bool warmup_start = false) const;
+
+    /**
+     * @brief Get a read only array of the datetime index of the asset
+     * 
+     * @return * py::array_t<long long> 
+     */
+    py::array_t<long long> get_datetime_index_view();
 
     /**
      * @brief Get pointer to the asset's underlying data
@@ -166,8 +168,22 @@ public:
      */
     double* get_data() {return this->data;};
 
-    [[nodiscard]] bool get_is_built()  const {return this->is_built;};
-    [[nodiscard]] bool get_is_loaded() const {return this->is_loaded;};
+    /**
+     * @brief Get the data of the asset object as a row major py array
+     * 
+     * @return py::array_t<double> underlying data of the asset
+     */
+    py::array_t<double> get_data_view();
+
+    /**
+     * @brief Get the headers of the asset object
+     * 
+     * @return std::vector<string> headers of the asset object
+     */
+    std::vector<string> get_headers();
+
+    [[nodiscard]] bool get_is_built()  const {return this->is_built;};  ///< has the asset been built
+    [[nodiscard]] bool get_is_loaded() const {return this->is_loaded;}; ///< has the asset data been loaded
 
     /**
      * @brief load in the headers from a vector of strings and assign them size_t indexs
@@ -216,9 +232,6 @@ public:
 
     /// @brief get the current datetime of the asset
     [[nodiscard]] long long *get_asset_time() const;
-
-    /// @brief get read only numpy array of the asset's datetime index
-    py::array_t<long long> get_datetime_index_view();
     
     double get_volatility() const; ///< get the volatility of the asset 
     double get_beta()       const; ///< get the beta of the assset

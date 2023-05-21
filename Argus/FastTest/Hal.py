@@ -102,6 +102,26 @@ class Hal:
             to_epoch = pd.to_datetime(to).value
             
         self.hydra.run(to_epoch, steps)
+
+    def asset_to_df(self, asset_id : str) -> FastTest.Asset:
+        asset = self.hydra.get_asset(asset_id)
+
+        if asset is None:
+            raise RuntimeError("asset does not exists")
+        
+        datetime_index = asset.get_datetime_index_view()
+        data_rm = asset.get_data_view()
+
+        # Reshape the array to match the desired row-wise representation
+        num_rows = asset.get_rows()
+        num_cols = len(data_rm) // num_rows
+        data_rm = np.reshape(data_rm, (num_rows, num_cols))
+
+        data_cm = np.transpose(data_rm)
+        asset_df = pd.DataFrame(data_cm).T
+        asset_df.index = pd.to_datetime(datetime_index)
+        asset_df.columns = asset.get_headers()
+        return asset_df
         
     def register_asset_from_df(self,
                             df: Type[pd.DataFrame],

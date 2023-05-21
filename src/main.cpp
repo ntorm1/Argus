@@ -25,17 +25,21 @@ using namespace std;
 void init_asset_ext(py::module &m)
 {
     py::class_<Asset, std::shared_ptr<Asset>>(m, "Asset")
-        .def("get_asset_id", &Asset::get_asset_id)
-        .def("load_headers", &Asset::load_headers)
-        .def("load_data", &Asset::py_load_data)
-        .def("get", &Asset::get)
-        .def("get_mem_address", &Asset::get_mem_address)
-        .def("get_column", &Asset::get_column)
-        .def("get_volatility", &Asset::get_volatility)
-        .def("get_beta", &Asset::get_beta)
-        .def("get_datetime_index_view",
-             &Asset::get_datetime_index_view,
-             py::return_value_policy::reference)
+        .def("get_asset_id",            &Asset::get_asset_id)
+        .def("load_headers",            &Asset::load_headers)
+        .def("load_data",               &Asset::py_load_data)
+        .def("get_rows",                &Asset::get_rows)
+        .def("get_cols",                &Asset::get_cols)
+        .def("get_headers",             &Asset::get_headers)
+        .def("get",                     &Asset::get)
+        .def("get_mem_address",         &Asset::get_mem_address)
+        .def("get_column",              &Asset::get_column)
+        .def("get_volatility",          &Asset::get_volatility)
+        .def("get_beta",                &Asset::get_beta)
+        .def("get_datetime_index_view", &Asset::get_datetime_index_view,
+            py::return_value_policy::reference)
+        .def("get_data_view",           &Asset::get_data_view,
+            py::return_value_policy::reference)
 
         .def("add_tracer", &Asset::add_tracer),
             py::arg("tracer_type"),
@@ -61,6 +65,11 @@ void init_exchange_ext(py::module &m)
         .def("new_asset", &Exchange::new_asset)
 
         .def("get_asset", &Exchange::get_asset, py::return_value_policy::reference)
+        .def("get_market", [](Exchange& self) {
+                return &self.market;
+            },
+             py::return_value_policy::reference
+        )
         .def("get_exchange_feature", 
             &Exchange::get_exchange_feature, 
             py::arg("column_name"),
@@ -113,19 +122,19 @@ void init_hydra_ext(py::module &m)
         .def("new_strategy", &Hydra::new_strategy,
             py::arg("strategy_id") = "default",
             py::arg("replace_if_exists") = true)
-        .def("new_exchange", &Hydra::new_exchange, py::return_value_policy::reference)
-        .def("new_broker", &Hydra::new_broker, py::return_value_policy::reference)
-        .def("new_portfolio", &Hydra::new_portfolio, py::return_value_policy::reference)
+        .def("new_exchange",            &Hydra::new_exchange, py::return_value_policy::reference)
+        .def("new_broker",              &Hydra::new_broker, py::return_value_policy::reference)
+        .def("new_portfolio",           &Hydra::new_portfolio, py::return_value_policy::reference)
         
-        .def("get_hydra_time", &Hydra::get_hydra_time)
+        .def("get_hydra_time",          &Hydra::get_hydra_time)
         .def("get_datetime_index_view", &Hydra::get_datetime_index_view)
-        .def("get_order_history", &Hydra::get_order_history)
-        .def("get_candles", &Hydra::get_candles)
-        .def("get_broker", &Hydra::get_broker)
-        .def("get_master_portfolio", &Hydra::get_master_portflio)
-        .def("get_portfolio", &Hydra::get_portfolio)
-        .def("get_asset", &Hydra::get_asset)
-        .def("get_exchange", &Hydra::get_exchange);
+        .def("get_order_history",       &Hydra::get_order_history)
+        .def("get_candles",             &Hydra::get_candles)
+        .def("get_broker",              &Hydra::get_broker)
+        .def("get_master_portfolio",    &Hydra::get_master_portflio)
+        .def("get_portfolio",           &Hydra::get_portfolio)
+        .def("get_asset",               &Hydra::get_asset)
+        .def("get_exchange",            &Hydra::get_exchange);
 
     m.def("new_hydra", &new_hydra, py::return_value_policy::reference);
 }

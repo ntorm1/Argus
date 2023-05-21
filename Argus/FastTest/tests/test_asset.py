@@ -102,6 +102,19 @@ class AssetTestMethods(unittest.TestCase):
         exchange = hydra.get_exchange(helpers.test1_exchange_id)
         exchange.add_tracer(AssetTracerType.BETA, 252, True)
 
+        hal.build()
+
+        market = exchange.get_market()
+        spy = hydra.get_asset("SPY")
+        #spy_close = spy.get_column("Close",0)
+        
+        betas =      {key : value.get_beta() for key, value in market.items()}
+
+        asset_df = hal.asset_to_df(list(betas.keys())[0])
+
+        #print(asset_df)
+
+
 
         return
 if __name__ == '__main__':

@@ -374,6 +374,23 @@ py::array_t<double> Asset::get_column(const string& column_name, size_t length)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::IndexOutOfBounds);
     }
+    // if length 0 is passed return the entire column
+    else if(length == 0)
+    {
+        auto column_offset = this->headers.find(column_name);
+        auto column_start = this->data + column_offset->second;
+        return py::array( 
+        py::buffer_info
+            (
+                column_start,                           /* Pointer to buffer */
+                sizeof(double),                         /* Size of one scalar */
+                py::format_descriptor<double>::format(),/* Python struct-style format descriptor */
+                1,                                      /* Number of dimensions */
+                { this->rows },                         /* Buffer dimensions */
+                { sizeof(double) * this->cols}          /* buffer stride*/
+            )
+    );
+    }
 
     auto column_offset = this->headers.find(column_name);
     auto row_offset = static_cast<int>(this->cols) * length;
@@ -387,7 +404,7 @@ py::array_t<double> Asset::get_column(const string& column_name, size_t length)
                 py::format_descriptor<double>::format(),/* Python struct-style format descriptor */
                 1,                                      /* Number of dimensions */
                 { length },                             /* Buffer dimensions */
-                { sizeof(double) * this->cols}
+                { sizeof(double) * this->cols}          /* buffer stride*/
             )
     );
 }
@@ -409,6 +426,19 @@ long long *Asset::get_datetime_index(bool warmup_start) const
     }
 }
 
+py::array_t<double> Asset::get_data_view()
+{
+    if (!this->is_built)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
+    }
+    return to_py_array(
+        this->data,
+        this->rows * this->cols,
+        true
+    );
+}
+
 py::array_t<long long> Asset::get_datetime_index_view()
 {
     if (!this->is_built)
@@ -416,16 +446,20 @@ py::array_t<long long> Asset::get_datetime_index_view()
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
 
     }
-    if (this->rows == 0)
-    {
-        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayLength);
-
-    }
     return to_py_array(
         this->datetime_index,
         this->rows,
         true);
 };
+
+std::vector<string> Asset::get_headers()
+{
+    std::vector<string> keys;
+    for (const auto& pair : this->headers) {
+        keys.push_back(pair.first);
+    }
+    return keys;
+}
 
 long long *Asset::get_asset_time() const
 {

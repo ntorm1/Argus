@@ -13,7 +13,7 @@
 using namespace std;
 
 bool case_ins_str_compare(const std::string& str1, const std::string& str2) {
-    return stricmp(str1.c_str(), str2.c_str()) == 0;
+    return _stricmp(str1.c_str(), str2.c_str()) == 0;
 }
 
 size_t case_ins_str_index(const std::vector<std::string>& columns, const std::string& column) {

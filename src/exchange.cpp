@@ -181,10 +181,16 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
 }
 
 void Exchange::register_index_asset(const asset_sp_t &asset_)
-{
+{   
+    // index assed already exists
     if(this->index_asset.has_value())
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyExists);
+    }
+    // exchange has already been built
+    if(this->is_built)
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyBuilt);
     }
 
     this->index_asset = asset_;
