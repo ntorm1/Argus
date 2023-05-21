@@ -103,12 +103,7 @@ class Hal:
             
         self.hydra.run(to_epoch, steps)
 
-    def asset_to_df(self, asset_id : str) -> FastTest.Asset:
-        asset = self.hydra.get_asset(asset_id)
-
-        if asset is None:
-            raise RuntimeError("asset does not exists")
-        
+    def asset_to_df(self, asset : FastTest.Asset):        
         datetime_index = asset.get_datetime_index_view()
         data_rm = asset.get_data_view()
 

@@ -105,14 +105,14 @@ class AssetTestMethods(unittest.TestCase):
         hal.build()
 
         market = exchange.get_market()
-        spy = hydra.get_asset("SPY")
-        #spy_close = spy.get_column("Close",0)
+        spy = exchange.get_index_asset()
         
-        betas =      {key : value.get_beta() for key, value in market.items()}
+        betas = {key : value.get_beta() for key, value in market.items()}
 
-        asset_df = hal.asset_to_df(list(betas.keys())[0])
+        asset_df = hal.asset_to_df(list(market.values())[0])
+        asset_df_spy = hal.asset_to_df(spy)
 
-        #print(asset_df)
+        print(asset_df_spy)
 
 
 

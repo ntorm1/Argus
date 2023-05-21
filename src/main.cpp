@@ -64,7 +64,8 @@ void init_exchange_ext(py::module &m)
         .def("build", &Exchange::build)
         .def("new_asset", &Exchange::new_asset)
 
-        .def("get_asset", &Exchange::get_asset, py::return_value_policy::reference)
+        .def("get_asset",       &Exchange::get_asset, py::return_value_policy::reference)
+        .def("get_index_asset", &Exchange::get_index_asset, py::return_value_policy::reference)
         .def("get_market", [](Exchange& self) {
                 return &self.market;
             },

@@ -172,8 +172,6 @@ void Hydra::register_index_asset(const asset_sp_t &asset_, string exchange_id_)
     }
 }
 
-
-
 optional<asset_sp_t> Hydra::get_asset(const string& asset_id_)
 {
     return this->exchange_map->get_asset(asset_id_);

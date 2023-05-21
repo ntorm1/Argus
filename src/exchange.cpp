@@ -201,6 +201,15 @@ void Exchange::register_index_asset(const asset_sp_t &asset_)
     }
 }
 
+optional<asset_sp_t> Exchange::get_index_asset()
+{
+    if(this->index_asset.has_value())
+    {
+        return this->index_asset;
+    }
+    return nullopt;
+}
+
 void Exchange::register_asset(const shared_ptr<Asset>& asset_)
 {
     string asset_id = asset_->get_asset_id();

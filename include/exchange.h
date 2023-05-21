@@ -75,6 +75,8 @@ public:
      */
     void register_index_asset(const asset_sp_t &index);
 
+    optional<asset_sp_t> get_index_asset();
+
     /**
      * @brief move assets that have expired in the last time step out of the market and market view
      * 

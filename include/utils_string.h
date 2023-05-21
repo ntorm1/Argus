@@ -36,10 +36,3 @@ std::tuple<size_t, size_t> parse_headers(const std::vector<std::string>& columns
 }
 
 #endif //ARGUS_UTILS_STRING_H
-
-/*
-INSIDE PARSE HEADERS
-INSIDE PARSE HEADERS case_ins_str_index
-INSIDE case_ins_str_compate
-id
-*/

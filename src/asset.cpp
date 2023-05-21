@@ -428,7 +428,7 @@ long long *Asset::get_datetime_index(bool warmup_start) const
 
 py::array_t<double> Asset::get_data_view()
 {
-    if (!this->is_built)
+    if (!this->is_loaded)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
@@ -441,7 +441,7 @@ py::array_t<double> Asset::get_data_view()
 
 py::array_t<long long> Asset::get_datetime_index_view()
 {
-    if (!this->is_built)
+    if (!this->is_loaded)
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
 
