@@ -28,7 +28,7 @@ Hydra::Hydra(int logging_, double cash_) : master_portfolio(nullptr)
     this->logging = logging_;
     this->brokers = std::make_shared<Brokers>();
     this->exchange_map = std::make_shared<ExchangeMap>();
-
+    this->is_built = false;
     this->master_portfolio = std::make_shared<Portfolio> (
             logging_, 
             cash_,

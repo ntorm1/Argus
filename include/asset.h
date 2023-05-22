@@ -276,15 +276,15 @@ public:
      * 
      * @param volatility_ pointer to the volatility set by the tracer
      */
-    void set_volatility(double* volatility_){this->volatility = volatility_;}
+    void set_volatility(double* volatility_){this->volatility = (volatility_ == nullptr) ? nullopt : optional<double*>(volatility_);}
 
     /**
      * @brief Set the beta to point to an asset tracers value
      * 
      * @param beta_ pointer to the beta set by the tracer
      */
-    void set_beta(double* beta_){this->beta = beta_;}
-
+    void set_beta(double* beta_){this->beta = (beta_ == nullptr) ? nullopt : optional<double*>(beta_);}
+    
     /**
      * @brief build and add a new tracer object to the asset
      * 
@@ -379,7 +379,7 @@ public:
     void build() override;
 
     // pure virtual function to reset the tracer
-    void reset() override {};
+    void reset() override;
 
     double* get_volatility(){return &this->volatility;}
 
@@ -407,7 +407,7 @@ public:
     void build() override;
 
     // pure virtual function to reset the tracer
-    void reset() override {};
+    void reset() override;
 
 private:
     /// pointer to the index asset

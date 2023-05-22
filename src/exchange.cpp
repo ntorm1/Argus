@@ -122,6 +122,12 @@ void Exchange::reset_exchange()
     this->current_index = 0;
     this->market_view.clear();
 
+    if(this->index_asset.has_value())
+    {
+        this->index_asset.value()->reset_asset();
+        this->index_asset.value()->goto_datetime(*this->datetime_index);
+    }
+
     // reset assets still in the market
     for(auto & asset_pair : this->market)
     {   

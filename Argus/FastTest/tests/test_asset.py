@@ -109,8 +109,6 @@ class AssetTestMethods(unittest.TestCase):
 
         market = exchange.get_market()
         spy = exchange.get_index_asset()
-        
-        betas = {key : value.get_beta() for key, value in market.items()}
         dfs = {}
         for key, value in market.items():
             asset_df = hal.asset_to_df(value)
@@ -130,18 +128,21 @@ class AssetTestMethods(unittest.TestCase):
             asset_df.dropna(inplace = True)
             dfs[key] = asset_df
         
-        for key, value in market.items():
-            asset_df = dfs[key]
-            assert(abs(betas[key] - asset_df["BETA"].values[0]) < 1e-4)
+        for i in range(2):
+            betas = {key : value.get_beta() for key, value in market.items()}
+            for key, value in market.items():
+                asset_df = dfs[key]
+                assert(abs(betas[key] - asset_df["BETA"].values[0]) < 1e-4)
 
-        hydra.forward_pass()
-        hydra.on_open()
-        hydra.backward_pass()
+            hydra.forward_pass()
+            hydra.on_open()
+            hydra.backward_pass()
 
-        betas = {key : value.get_beta() for key, value in market.items()}
-        for key, value in market.items():
-            asset_df = dfs[key]
-            assert(abs(betas[key] - asset_df["BETA"].values[1]) < 1e-4)
+            betas = {key : value.get_beta() for key, value in market.items()}
+            for key, value in market.items():
+                asset_df = dfs[key]
+                assert(abs(betas[key] - asset_df["BETA"].values[1]) < 1e-4)
+            hal.reset()
 
 if __name__ == '__main__':
     unittest.main()

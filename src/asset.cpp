@@ -68,9 +68,9 @@ void Asset::reset_asset()
 
     for(auto& tracer : this->tracers)
     {   
+        //TODO Not working?
         tracer->reset();
     }
-
 }
 
 void Asset::build()
@@ -731,6 +731,10 @@ void BetaTracer::build()
         this->beta = cov / *this->index_volatility;
         this->parent_asset->set_beta(&this->beta);
     }
+    else
+    {
+        this->parent_asset->set_beta(nullptr);
+    }
 }
 
 void BetaTracer::step()
@@ -768,6 +772,15 @@ void BetaTracer::step()
     }
 }
 
+void BetaTracer::reset()
+{
+    this->sum_products = 0;
+    this->sum_parent = 0;
+    this->sum_index = 0;
+    this->beta = 0;
+    this->build();
+}
+
 void VolatilityTracer::build()
 {
     // build the asset window
@@ -798,6 +811,10 @@ void VolatilityTracer::build()
     {
         this->volatility = (this->sum_sqaures - (sum * sum) / this->lookback) / (this->lookback - 1);
         this->parent_asset->set_volatility(&this->volatility);
+    }
+    else
+    {
+        this->parent_asset->set_volatility(nullptr);
     }
 }
 
@@ -830,4 +847,12 @@ void VolatilityTracer::step()
             this->parent_asset->set_volatility(&this->volatility);
         }
     }
+}
+
+void VolatilityTracer::reset()
+{
+    this->volatility = 0;
+    this->sum_sqaures = 0;
+    this->sum = 0;
+    this->build();
 }
