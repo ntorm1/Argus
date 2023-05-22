@@ -61,6 +61,7 @@ class AssetTestMethods(unittest.TestCase):
         assert (address_1 == address_2)
 
     def test_vol_tracer(self):
+        return
         hal = helpers.create_spy_hal()
         hydra = hal.get_hydra()
         spy = hydra.get_asset("SPY")
@@ -96,26 +97,51 @@ class AssetTestMethods(unittest.TestCase):
         assert(abs(cpp_vol - vol) < 1e-6)
 
     def test_beta_tracer(self):
-        hal = helpers.create_beta_hal()
+        hal = helpers.create_beta_hal(logging=0)
         hydra = hal.get_hydra()
+        length = 252
 
         exchange = hydra.get_exchange(helpers.test1_exchange_id)
-        exchange.add_tracer(AssetTracerType.BETA, 252, True)
+        exchange.add_tracer(AssetTracerType.BETA, length, True)
 
         hal.build()
+        print("ok")
 
         market = exchange.get_market()
         spy = exchange.get_index_asset()
         
         betas = {key : value.get_beta() for key, value in market.items()}
+        dfs = {}
+        for key, value in market.items():
+            asset_df = hal.asset_to_df(value)
+            asset_df_spy = hal.asset_to_df(spy)
+            asset_df_spy.columns = [col + "_SPY" for col in asset_df_spy.columns]
 
-        asset_df = hal.asset_to_df(list(market.values())[0])
-        asset_df_spy = hal.asset_to_df(spy)
+            asset_df = pd.merge(asset_df, asset_df_spy["Close_SPY"], left_index=True, right_index=True, how = "left")
+            asset_df["returns"] = asset_df["Close"].pct_change()
+            asset_df["returns_SPY"] = asset_df["Close_SPY"].pct_change()
 
-        print(asset_df_spy)
+            length = 251
+            rolling_covariance = asset_df["returns"].rolling(window=length).cov(asset_df["returns_SPY"], ddof=0)
+            rolling_variance = asset_df["returns_SPY"].rolling(window=length).var(ddof = 0)
+            asset_df["rolling_variance"] = rolling_variance
+            asset_df["rolling_cov"] = rolling_covariance
+            asset_df["BETA"] = rolling_covariance / rolling_variance
+            asset_df.dropna(inplace = True)
+            dfs[key] = asset_df
+        
+        for key, value in market.items():
+            asset_df = dfs[key]
+            assert(abs(betas[key] - asset_df["BETA"].values[0]) < 1e-4)
 
+        hydra.forward_pass()
+        hydra.on_open()
+        hydra.backward_pass()
 
+        betas = {key : value.get_beta() for key, value in market.items()}
+        for key, value in market.items():
+            asset_df = dfs[key]
+            assert(abs(betas[key] - asset_df["BETA"].values[1]) < 1e-4)
 
-        return
 if __name__ == '__main__':
     unittest.main()

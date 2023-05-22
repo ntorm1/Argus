@@ -65,6 +65,12 @@ void Asset::reset_asset()
     // move datetime index and data pointer back to start
     this->current_index = this->warmup;
     this->row = &this->data[this->warmup*this->cols];
+
+    for(auto& tracer : this->tracers)
+    {   
+        tracer->reset();
+    }
+
 }
 
 void Asset::build()
@@ -74,7 +80,7 @@ void Asset::build()
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotBuilt);
     }
-    // build the indivual tracers
+
     for(auto& tracer : this->tracers)
     {   
         tracer->build();
@@ -484,11 +490,9 @@ void Asset::goto_datetime(long long datetime)
     // search for datetime in the index
     for(int i = this->current_index; i < this->rows; i++)
     {   
-        //is >= right?
-        if(this->datetime_index[i] >= datetime)
+        this->step();
+        if(*this->get_asset_time() >= datetime)
         {
-            this->row += (this->cols * (i-this->warmup));
-            this->current_index = i;
             return;
         }
     }
@@ -634,6 +638,7 @@ BetaTracer::BetaTracer(Asset* parent_asset_, size_t lookback_, bool adjust_warmu
     else
     {
         this->index_asset->add_tracer(AssetTracerType::Volatility, lookback_, adjust_warmup_);
+        //this->index_asset->build();
     }
 
     // allow for lookback to adjust the warmup needed for the asset
@@ -712,17 +717,54 @@ void BetaTracer::build()
 
         this->sum_parent += pct_change_asset;
         this->sum_index += pct_change_index;
-        this->sum_parent_squared += pct_change_asset * pct_change_asset;
-        this->sum_index_squared += pct_change_index * pct_change_index;
         this->sum_products += pct_change_asset * pct_change_index;
+
+        previous_asset = next_asset;
+        previous_parent = next_parent;
     }
 
     // if the window is fully loaded set the volatility
     if(this->parent_asset->current_index >= this->lookback)
     {
-        this->beta = (this->sum_products - this->sum_parent * this->sum_index / this->lookback) 
+        auto cov = (this->sum_products - (this->sum_parent * this->sum_index) / this->lookback) 
                     / (this->lookback - 1);
+        this->beta = cov / *this->index_volatility;
         this->parent_asset->set_beta(&this->beta);
+    }
+}
+
+void BetaTracer::step()
+{
+    double old_pct_parent, new_pct_parent, old_pct_index, new_pct_index;
+    std::tie(old_pct_parent,new_pct_parent) = this->asset_window.pct_change();
+    std::tie(old_pct_index,new_pct_index) = this->index_window.pct_change();
+
+    this->asset_window.step();
+    this->index_window.step();
+
+    this->sum_parent += new_pct_parent;
+    this->sum_index += new_pct_index;
+    this->sum_products += new_pct_parent * new_pct_index;
+
+    // asset fully loaded
+    if(!this->asset_window.rows_needed)
+    {
+        this->sum_parent -= old_pct_parent;
+        this->sum_index -= old_pct_index;
+        this->sum_products -= old_pct_parent * old_pct_index;
+        auto cov = (this->sum_products - (this->sum_parent * this->sum_index) / this->lookback) 
+                    / (this->lookback - 1);
+        this->beta = cov / *this->index_volatility;    }
+    else
+    {        
+        this->asset_window.rows_needed--;
+
+        // we have reached the point to where data is ready, set the parent asset's beta 
+        // to point to this
+        if(this->asset_window.rows_needed == 0)
+        {
+            this->parent_asset->set_beta(&this->beta);
+        }
     }
 }
 

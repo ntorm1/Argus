@@ -34,9 +34,10 @@ Exchange::Exchange(std::string exchange_id_, int logging_) : exchange_id(std::mo
 
 void Exchange::build()
 {
-#ifdef DEBUGGING
-    printf("EXCHANGE: BUILDING EXCHANGE: %s\n", this->exchange_id.c_str());
-#endif
+    if(this->logging)
+    {
+        printf("EXCHANGE: BUILDING EXCHANGE: %s\n", this->exchange_id.c_str());
+    }
 
     // check to see if any assets exist
     if (this->market.empty())
@@ -52,6 +53,8 @@ void Exchange::build()
     this->candles = 0;
 
     // build the consolidate exchange datetime index
+    if(this->logging) printf("EXCHANGE: BUILDING EXCHANGE: %s DATETIME INDEX\n", this->exchange_id.c_str());
+    
     auto datetime_index_ = container_sorted_union(
         this->market,
         [](const shared_ptr<Asset> &obj)
@@ -76,10 +79,8 @@ void Exchange::build()
         }
 
         this->candles+= asset->get_rows();
-
-        // build the indivual asset
-        asset->build();
     }
+    if(this->logging) printf("EXCHANGE: EXCHANGE: %s DATETIME INDEX BUILT\n", this->exchange_id.c_str());
 
     // if index asset is registered then make sure it is valid. It must contain the datetime
     // indexs of each asset listed on the exchange, i.e. contains the exchange datetime index
@@ -96,13 +97,24 @@ void Exchange::build()
         {
             ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidArrayValues);
         }
+        // move it to the start of the datetime index
+        if(this->logging) printf("EXCHANGE: BULDING EXCHANGE: %s INDEX ASSET\n", this->exchange_id.c_str());
+        this->index_asset.value()->build();
+        this->index_asset.value()->goto_datetime(*this->datetime_index);
+        if(this->logging) printf("EXCHANGE: EXCHANGE: %s INDEX ASSET BUILT\n", this->exchange_id.c_str());
+    }   
+
+    // build the indivual assets
+    if(this->logging) printf("EXCHANGE: BUILDING EXCHANGE: %s ASSETS\n", this->exchange_id.c_str());
+    for(auto& asset_pair : this->market){
+        asset_pair.second->build();
     }
+    if(this->logging) printf("EXCHANGE: EXCHANGE: %s ASSETS BUILT\n", this->exchange_id.c_str());
+
 
     this->is_built = true;
 
-#ifdef DEBUGGING
-    printf("EXCHANGE: EXCHANGE: %s BUILT\n", this->exchange_id.c_str());
-#endif
+    if(this->logging) printf("EXCHANGE: EXCHANGE: %s BUILT\n", this->exchange_id.c_str());
 }
 
 void Exchange::reset_exchange()
@@ -479,6 +491,12 @@ bool Exchange::get_market_view()
     // set exchange time to compare to assets
     this->exchange_time = this->datetime_index[this->current_index];
 
+    // step index asset forward if it exists
+    if(this->index_asset.has_value())
+    {
+        this->index_asset.value()->step();
+    }
+
     // Define a lambda function that processes each asset
     auto process_asset = [&](auto& _asset_pair) {
         //access raw pointer
@@ -516,12 +534,6 @@ bool Exchange::get_market_view()
         this->market.begin(), 
         this->market.end(), 
         process_asset);
-
-    // step index asset forward if it exists
-    if(this->index_asset.has_value())
-    {
-        this->index_asset.value()->step();
-    }
 
     // move to next datetime and return true showing the market contains at least one
     // asset that is not done streaming

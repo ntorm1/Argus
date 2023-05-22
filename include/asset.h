@@ -401,7 +401,7 @@ public:
     AssetTracerType tracer_type() const override {return AssetTracerType::Beta;}
 
     /// pure virtual function called on parent asset step
-    void step() override {}
+    void step() override;
 
     // pure virtual function to build the tracer
     void build() override;
@@ -425,8 +425,6 @@ private:
     double sum_products = 0.0;         ///< Running sum of products
     double sum_parent = 0.0;           ///< Running sum of observations for variable parent asset
     double sum_index = 0.0;            ///< Running sum of observations for variable index asset
-    double sum_parent_squared = 0.0;   ///< Running sum of squared observations for variable parent asset
-    double sum_index_squared = 0.0;    ///< Running sum of squared observations for variable index asset
     double beta = 0.0;                 ///< beta of the parent asset
 };
 
