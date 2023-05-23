@@ -126,6 +126,7 @@ void Asset::load_headers(const vector<std::string> &columns)
     for (const auto &column_name : columns)
     {
         this->headers.emplace(column_name, i);
+        this->headers_ordered.push_back(column_name);
         i++;
     }
 }
@@ -477,11 +478,7 @@ py::array_t<long long> Asset::get_datetime_index_view()
 
 std::vector<string> Asset::get_headers()
 {
-    std::vector<string> keys;
-    for (const auto& pair : this->headers) {
-        keys.push_back(pair.first);
-    }
-    return keys;
+    return this->headers_ordered;
 }
 
 long long *Asset::get_asset_time() const

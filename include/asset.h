@@ -305,8 +305,8 @@ private:
     bool is_built  = false;     ///< has the asset been built
     bool is_view  =  false;     ///< does the asset own the underlying data pointer
 
-    /// @brief map between column name and column index
-    std::unordered_map<string, size_t> headers;
+    std::unordered_map<string, size_t> headers;         ///<map between column name and column index
+    std::vector<string>                headers_ordered; ///<ordered list of columns
 
     long long*  datetime_index = nullptr;   ///< datetime index of the asset (ns epoch time stamp)
     double*     data           = nullptr;   ///< underlying data of the asset

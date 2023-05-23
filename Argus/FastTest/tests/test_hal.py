@@ -334,7 +334,7 @@ class HalTestMethods(unittest.TestCase):
         
         print(f"HAL: candles: {candles:.4f} candles")
         print(f"HAL: execution time: {execution_time:.4f} seconds")
-        print(f"HAL: candles per seoncd: {(candles / execution_time):,.3f}")     
+        print(f"HAL: candles per second: {(candles / execution_time):,.3f}")     
         nlv1 = mp.get_tracer(PortfolioTracerType.VALUE).get_nlv_history()[-1]
         return
         st = time.time()

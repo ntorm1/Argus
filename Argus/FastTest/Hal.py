@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 from datetime import datetime
 from typing import Type, List
 import cProfile
@@ -92,7 +93,7 @@ class Hal:
     def get_hydra_time(self):
         return datetime.fromtimestamp(self.hydra.get_hydra_time())
 
-    def run(self, to : str = "", steps : int = 0):
+    def run(self, to : str = "", steps : int = 0, time_run = False):
         #note, if two conditions passed the first to tragger will casue hault
         if not self.is_built:
             raise RuntimeError("Hal has not been built")
@@ -100,8 +101,18 @@ class Hal:
             to_epoch = 0
         else:
             to_epoch = pd.to_datetime(to).value
-            
+        
+        st = time.time()
         self.hydra.run(to_epoch, steps)
+        et = time.time()
+
+        if time_run:
+            execution_time = et - st
+            candles = self.get_candles()
+            
+            print(f"HAL: candles: {candles:.4f} candles")
+            print(f"HAL: execution time: {execution_time:.4f} seconds")
+            print(f"HAL: candles per seoncd: {(candles / execution_time):,.3f}")   
 
     def asset_to_df(self, asset : FastTest.Asset):        
         datetime_index = asset.get_datetime_index_view()
