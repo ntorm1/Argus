@@ -56,9 +56,11 @@ enum OrderExecutionType
  */
 enum OrderTargetType
 {
-    UNITS,   // order target size will be processed as units
-    DOLLARS, // order target size will be processed as dollars
-    PCT      // order target size will be processed as pct of total pct of the source portfolio
+    UNITS,              /// order target size is in units, i.e. 100 shares
+    DOLLARS,            /// order target size is in dollars, i.e. $1000 at $100 a share => 10 shares
+    PCT,                /// order target size is in pct of total nlv of the source portfolio
+    BETA_DOLLARS,       /// order target size is in beta dollars 
+    PCT_BETA_DOLLARS    /// order target size is in pct of total nlv of the source potfolio normalized by beta
 };
 
 /**

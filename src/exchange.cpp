@@ -173,22 +173,21 @@ Exchange::~Exchange()
 #endif
 }
 
-shared_ptr<Asset> Exchange::get_asset(const std::string &asset_id_)
+shared_ptr<Asset> Exchange::get_asset(const std::string &asset_id_) const
 {
-    try
+    if(!this->market.contains(asset_id_))
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
+    }
+    else
     {
         return this->market.at(asset_id_);
-    }
-    catch (const std::out_of_range &e)
-    {
-        // Catch the exception and re-raise it as a Python KeyError
-        throw py::key_error(e.what());
     }
 }
 
 shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &broker_id)
 {
-    if (this->market.count(asset_id_))
+    if(this->market.contains(asset_id_))
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
@@ -200,7 +199,7 @@ shared_ptr<Asset> Exchange::new_asset(const string &asset_id_, const string &bro
 
 void Exchange::register_index_asset(const asset_sp_t &asset_)
 {   
-    // index assed already exists
+    // index asset already exists
     if(this->index_asset.has_value())
     {
         ARGUS_RUNTIME_ERROR(ArgusErrorCode::AlreadyExists);
@@ -562,6 +561,7 @@ py::dict Exchange::get_exchange_feature(
     const string& column, 
     int row,
     ExchangeQueryType query_type,
+    optional<AssetTracerType> query_scaler,
     int N)
 {
     // the row must is not allowed to look into the future. Row 0 means the current row for the asset
@@ -598,7 +598,8 @@ py::dict Exchange::get_exchange_feature(
             if(asset_sp)
             {
                 //place the value in the dict if the asset has that feature, else skip
-                py_dict[it->first.c_str()] = asset_sp->get_asset_feature(column, row);
+                auto asset_feature = asset_sp->get_asset_feature(column, row, query_scaler);
+                py_dict[it->first.c_str()] = asset_feature;
             }
             else
             {
@@ -617,7 +618,7 @@ py::dict Exchange::get_exchange_feature(
         if(asset_sp)
         {
             //place the value in the dict if the asset has that feature, else skip
-            auto asset_value = asset_sp->get_asset_feature(column, row);
+            auto asset_value = asset_sp->get_asset_feature(column, row, query_scaler);
             asset_pairs.emplace_back(std::make_pair(it->first.c_str(),asset_value));
             
         }

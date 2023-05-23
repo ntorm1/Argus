@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-
 #include "portfolio.h"
 #include "position.h"
 #include "order.h"
@@ -15,6 +14,13 @@
 #include "exchange.h"
 
 using namespace std;
+
+struct CommisionScheme
+{
+    double flat_com   = 0.0f;     ///< flat commision paid on each trade
+    double pct_com    = 0.0f;     ///< commision paid as a pct of total trade value
+    double margin_rate      = 0.0f;     ///< margin rate of the broker
+};
 
 class Broker;
 
@@ -35,14 +41,11 @@ public:
     /// @param broker_id        unique id of the broker
     /// @param cash             cash held at broker
     /// @param logging          logging level
-    /// @param history          sp to history obj 
-    /// @param master_portfolio sp to master potfolio
     Broker(
         string broker_id,
         double cash,
-        int logging,
-        shared_ptr<Portfolio> master_portfolio);
-
+        int logging
+    );
     /// build the broker, set member pointers
     /// \param exchanges    container for master exchange map
     void build(exchanges_sp_t exchange_map);
@@ -84,7 +87,7 @@ public:
      * @param order sp to a new order object
      * @param process_fill wether or not to process the order once it has been filled
      */
-    void place_order(shared_ptr<Order> order, bool process_fill = true);
+    void place_order(shared_ptr<Order> order,bool process_fill = true);
 
     /**
      * @brief place a new order into the order buffer to be executed at the end of a timestemp
@@ -104,11 +107,8 @@ private:
     /// unique id of the broker
     string broker_id;
 
-    /// cash held at the broker
-    double cash;
-
-    /// starting cash held at the broker
-    double starting_cash;
+    double cash;            ///< cash held at the broker    
+    double starting_cash;   ///< starting cash held at the broker
 
     /// open orders held at the broker
     vector<order_sp_t> open_orders;
@@ -124,6 +124,9 @@ private:
 
     /// master portfolio
     portfolio_sp_t master_portfolio;
+
+
+    std::optional<CommisionScheme> com_scheme;
 
     void log_order_place(shared_ptr<Order> &filled_order);
 };

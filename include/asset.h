@@ -245,7 +245,11 @@ public:
      * @param index row index to look at, 0 is current, -1 is previous, ...
      * @return double value at that location
      */
-    [[nodiscard]] double get_asset_feature(const string& column_name, int index = 0);
+    [[nodiscard]] double get_asset_feature(
+        const string& column_name, 
+        int index = 0,
+        optional<AssetTracerType> query_scaler = nullopt
+    );
 
     /**
      * @brief Get a column from the asset, end index is the current value

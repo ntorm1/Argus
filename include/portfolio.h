@@ -231,8 +231,6 @@ public:
     /**
      * @brief does the portfolio contain any positions (not including parent portfolios)
      * 
-     * @return true
-     * @return false 
      */
     bool is_empty() const {return this->positions_map.size() > 0;}
 

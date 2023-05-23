@@ -347,9 +347,8 @@ double Asset::get_market_price(bool on_close) const
         return *(this->row - this->cols + this->open_column);
 }
 
-double Asset::get_asset_feature(const string& column_name, int index)
+double Asset::get_asset_feature(const string& column_name, int index, optional<AssetTracerType> query_scaler)
 {
-
     #ifdef ARGUS_RUNTIME_ASSERT
     //make sure row pointer is not out of bounds
     ptrdiff_t ptr_index = this->row - this->data; 
@@ -371,7 +370,25 @@ double Asset::get_asset_feature(const string& column_name, int index)
 
     //prevent acces index < 0
     assert(row_offset + ptr_index > 0);
-    return *(this->row - this->cols + column_offset->second + row_offset);
+    auto asset_value = *(this->row - this->cols + column_offset->second + row_offset);
+    
+    if(!query_scaler.has_value())
+    {
+        return asset_value;
+    }
+
+    switch (query_scaler.value())
+    {
+        case AssetTracerType::Volatility:
+            asset_value /= this->get_volatility();
+            break;
+        case AssetTracerType::Beta:
+            asset_value /= this->get_beta();
+            break;
+        default:
+            ARGUS_RUNTIME_ERROR(ArgusErrorCode::NotImplemented);
+    }
+    return asset_value;
 }
 
 py::array_t<double> Asset::get_column(const string& column_name, size_t length)

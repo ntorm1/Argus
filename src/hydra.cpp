@@ -277,8 +277,8 @@ shared_ptr<Broker> Hydra::new_broker(const std::string &broker_id, double cash)
     auto broker = make_shared<Broker>(
         broker_id,
         cash,
-        this->logging,
-        this->master_portfolio);
+        this->logging
+    );
 
     // insert a clone of the smart pointer into the exchange
     this->brokers->emplace(broker_id, broker);

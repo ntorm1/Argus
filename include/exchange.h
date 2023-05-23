@@ -112,7 +112,7 @@ public:
     asset_sp_t new_asset(const string &asset_id, const string& broker_id);
 
     /// get smart pointer to existing asset on the exchange
-    asset_sp_t get_asset(const string &asset_id);
+    asset_sp_t get_asset(const string &asset_id) const;
 
     /// get numpy array read only view into the exchange's datetime index
     py::array_t<long long> get_datetime_index_view();
@@ -149,7 +149,8 @@ public:
     py::dict get_exchange_feature(
         const string& column, 
         int row = 0, 
-        ExchangeQueryType query_type = ExchangeQueryType::Default,
+        ExchangeQueryType query_type   =  ExchangeQueryType::Default,
+        optional<AssetTracerType> query_scaler = nullopt,
         int N = -1
     );
 

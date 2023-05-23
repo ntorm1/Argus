@@ -21,6 +21,7 @@ using portfolio_sp_t = Portfolio::portfolio_sp_t;
 using exchanges_sp_t = ExchangeMap::exchanges_sp_t;
 using position_sp_t = Position::position_sp_t;
 using order_sp_t = Order::order_sp_t;
+using asset_sp_t = Asset::asset_sp_t;
 
 using namespace std;
 
@@ -103,7 +104,6 @@ void Portfolio::order_target_allocations(py::dict allocations,
             {
                 std::vector<order_sp_t> orders;
                 auto orders_nullopt = this->generate_order_inverse(position_pair.first, true, false);
-                if(this->logging){printf("\n");}
             }
         }
     }
@@ -131,31 +131,38 @@ void Portfolio::order_target_size(const string &asset_id_, double size,
                                 OrderExecutionType order_execution_type,
                                 int trade_id)
 {
-    double units = size;
-    auto position = this->get_position(asset_id_);
-    
     double market_price = this->exchange_map->get_market_price(asset_id_);
+    asset_sp_t asset = nullptr;
 
     switch (order_target_type) {
-        case UNITS:
+        case OrderTargetType::UNITS:
             break;
-        case DOLLARS:
-            units /= market_price;
+        case OrderTargetType::DOLLARS:
+            size /= market_price;
             break;
-        case PCT:
-            units = (size * this->get_nlv()) / market_price;
+        case OrderTargetType::PCT:
+            size = (size * this->get_nlv()) / market_price;
+            break;
+        case OrderTargetType::BETA_DOLLARS:
+            asset = this->exchange_map->get_asset(asset_id_).value();
+            size /= (market_price * asset->get_beta());
+            break;
+        case OrderTargetType::PCT_BETA_DOLLARS:
+            asset = this->exchange_map->get_asset(asset_id_).value();
+            size = (size * this->get_nlv()) / (market_price * asset->get_beta());
             break;
     }
 
+    auto position = this->get_position(asset_id_);
     if(position.has_value())
     {
         // if position exists adjust order units
         // i.e. if currently long 10 units but target is -10, then have to subtract the 10 units.
         double existing_units = position.value()->get_units();
-        units -= existing_units;
+        size -= existing_units;
 
         // check to see if units needed to adjust position to correct size is greater then the epsilon passed
-        double offset = abs((existing_units - units) / units);
+        double offset = abs((existing_units - size) / existing_units);
         if(offset < epsilon)
         {
             return;
@@ -167,14 +174,14 @@ void Portfolio::order_target_size(const string &asset_id_, double size,
     }
 
     // position is already at target size
-    if(units == 0.0f)
+    if(abs(size) < 0.000000001f)
     {
         return;
     }
     // position needs to be altered
     else
     {
-        this->place_market_order(asset_id_, units, strategy_id, order_execution_type, trade_id);
+        this->place_market_order(asset_id_, size, strategy_id, order_execution_type, trade_id);
     }
 }
 
@@ -835,7 +842,8 @@ shared_ptr<Portfolio> Portfolio::find_portfolio(const string &portfolio_id_){
 
 void Portfolio::add_cash(double cash_)
 {
-    this->cash += cash_;
+
+    gmp_add_assign(this->cash, cash_);
     if(!this->is_built)
     {
         this->starting_cash += cash_;

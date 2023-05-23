@@ -76,6 +76,7 @@ void init_exchange_ext(py::module &m)
             py::arg("column_name"),
             py::arg("row") = 0,
             py::arg("query_type") = ExchangeQueryType::Default,
+            py::arg("query_scaler") = nullopt,
             py::arg("N") = -1)
 
         .def("get_asset_feature", 
@@ -289,16 +290,16 @@ void init_enum(py::module &m){
         .export_values();
 
     py::enum_<AssetTracerType>(m, "AssetTracerType")
-        .value("VOLATILITY", AssetTracerType::Volatility)
-        .value("BETA", AssetTracerType::Beta)
+        .value("VOLATILITY",    AssetTracerType::Volatility)
+        .value("BETA",          AssetTracerType::Beta)
         .export_values();
 
     py::enum_<ExchangeQueryType>(m, "ExchangeQueryType")
-        .value("DEFAULT", ExchangeQueryType::Default)
-        .value("NLARGEST", ExchangeQueryType::NLargest)
+        .value("DEFAULT",   ExchangeQueryType::Default)
+        .value("NLARGEST",  ExchangeQueryType::NLargest)
         .value("NSMALLEST", ExchangeQueryType::NSmallest)
-        .value("NEXTREME", ExchangeQueryType::NExtreme)
-        .export_values();       
+        .value("NEXTREME",  ExchangeQueryType::NExtreme)
+        .export_values();     
 }
 
 PYBIND11_MODULE(FastTest, m)

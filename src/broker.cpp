@@ -17,17 +17,12 @@
 using namespace std;
 
 
-Broker::Broker(string broker_id_,
-               double cash_,
-               int logging_,
-               shared_ptr<Portfolio> master_portfolio) : broker_account(broker_id_, cash_),
-                                                         master_portfolio(nullptr)
+Broker::Broker(string broker_id_, double cash_, int logging_) : broker_account(broker_id_, cash_)
 {
-    this->master_portfolio = std::move(master_portfolio);
-
     this->broker_id = std::move(broker_id_);
     this->cash = cash_;
     this->logging = logging_;
+    this->com_scheme = nullopt;
 }
 
 void Broker::build(
@@ -197,8 +192,19 @@ void Broker::process_filled_order(order_sp_t filled_order)
     this->broker_account.on_order_fill(new_order);
     #endif
 
-    // get the portfolio the order was placed for, adjust the sub portfolio accorindly
-    filled_order->get_source_portfolio()->on_order_fill(filled_order);
+    // get the portfolio the order was placed for, adjust the sub portfolio accordingly
+    auto portfilio = filled_order->get_source_portfolio();
+
+    if(this->com_scheme.has_value())
+    {
+        double commision = 0.0f;
+        commision += this->com_scheme.value().flat_com;
+        commision += this->com_scheme.value().pct_com * abs(filled_order->get_units()) * filled_order->get_average_price();
+        portfilio->add_cash(-1*commision);
+        this->cash -= commision;
+    }
+
+    portfilio->on_order_fill(filled_order);
 
     #ifdef DEBUGGING
     printf("broker filled order processed \n");
