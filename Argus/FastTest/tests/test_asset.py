@@ -61,7 +61,6 @@ class AssetTestMethods(unittest.TestCase):
         assert (address_1 == address_2)
 
     def test_vol_tracer(self):
-        return
         hal = helpers.create_spy_hal()
         hydra = hal.get_hydra()
         spy = hydra.get_asset("SPY")

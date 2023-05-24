@@ -282,6 +282,8 @@ void init_enum(py::module &m){
         .value("UNITS", OrderTargetType::UNITS)
         .value("DOLLARS", OrderTargetType::DOLLARS)
         .value("PCT", OrderTargetType::PCT)
+        .value("BETA_DOLLARS", OrderTargetType::BETA_DOLLARS)
+        .value("PCT_BETA_DOLLARS", OrderTargetType::PCT_BETA_DOLLARS)
         .export_values();
 
     py::enum_<PortfolioTracerType>(m, "PortfolioTracerType")

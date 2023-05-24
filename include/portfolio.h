@@ -20,7 +20,8 @@ class EventTracer;
 enum PortfolioTracerType
 {
     Value,
-    Event
+    Event,
+    PortfolioBeta
 };
 
 class Portfolio : public std::enable_shared_from_this<Portfolio>
@@ -250,6 +251,13 @@ public:
     shared_ptr<PortfolioTracer> get_tracer(PortfolioTracerType tracer_type);
 
     /**
+     * @brief Set the beta to point to portfolio's beta tracer value
+     * 
+     * @param beta_ pointer to the portfolio tracer's beta
+     */
+    void set_beta(double* beta_){this->beta = (beta_ == nullptr) ? nullopt : optional<double*>(beta_);}
+
+    /**
      * @brief generate a consolidated order history for all child portfolios this will
      *        search through child portfolios and look for event tracers and copy the orders
      *        into the new vector 
@@ -288,14 +296,12 @@ private:
     /// smart pointer to event tracer (nullptr if not registered)
     shared_ptr<EventTracer> event_tracer;
 
-    /// cash held by the portfolio
-    double cash;
+    double cash;            ///< cash held by the portfolio
+    double starting_cash;   ///< starting cash of the portfolio
+    double nlv;             ///< net liquidation value of the portfolio
 
-    /// starting cash of the portfolio
-    double starting_cash;
-
-    /// net liquidation value of the portfolio
-    double nlv;
+    /// @brief optional pointer to a beta tracer's value
+    optional<double*> beta  = nullopt;
 
     /// unrealized_pl of the portfolio
     double unrealized_pl = 0;
@@ -392,17 +398,41 @@ protected:
     Portfolio* parent_portfolio;
 };
 
+class PortfolioBetaTracer : public PortfolioTracer
+{
+public:
+    PortfolioBetaTracer(Portfolio* parent_portfolio_) : PortfolioTracer(parent_portfolio_){}
+
+    std::vector<double> beta_history;    ///< historical beta of the portfolio
+    double beta;                         ///< current beta of the portfolio
+
+    PortfolioTracerType tracer_type() const override {return PortfolioTracerType::PortfolioBeta;}
+
+    void build(size_t portfolio_eval_length) override
+    {
+        this->beta_history.reserve(portfolio_eval_length);
+    }
+
+    void reset() override 
+    {
+        this->beta_history.clear();
+    }
+
+    void step(long long datetime) override
+    {
+        this->beta_history.push_back(this->beta);
+        this->beta = 0;
+    };
+};
+
 class ValueTracer : public PortfolioTracer
 {
 public:
     /// ValueTracer constructor
     ValueTracer(Portfolio* parent_portfolio_) : PortfolioTracer(parent_portfolio_){}
 
-    /// nlv container
-    std::vector<double> nlv_history;
-
-    /// historical cash values of the portfolio
-    std::vector<double> cash_history;
+    std::vector<double> nlv_history;    ///< historical nlv of the portfolio
+    std::vector<double> cash_history;   ///< historical cash values of the portfolio
 
     /// datetime index the portfolio was evaluated at
     std::vector<long long> datetime_index;

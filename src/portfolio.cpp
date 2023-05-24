@@ -642,6 +642,15 @@ void Portfolio::add_sub_portfolio(const string &portfolio_id_, portfolio_sp_t po
         }
     }
 }
+optional<portfolio_sp_t> Portfolio::get_sub_portfolio(const string &portfolio_id_)
+{
+    auto iter = this->portfolio_map.find(portfolio_id_);
+    if (this->portfolio_map.end() == iter)
+    {
+        return nullopt;
+    }
+    return this->portfolio_map.at(portfolio_id_);
+}
 
 void Portfolio::update(long long datetime){
     // save current portfolio state to the history
@@ -651,16 +660,6 @@ void Portfolio::update(long long datetime){
     for(auto &portfolio_pair : this->portfolio_map){
         portfolio_pair.second->update(datetime);
     }
-}
-
-optional<portfolio_sp_t> Portfolio::get_sub_portfolio(const string &portfolio_id_)
-{
-    auto iter = this->portfolio_map.find(portfolio_id_);
-    if (this->portfolio_map.end() == iter)
-    {
-        return nullopt;
-    }
-    return this->portfolio_map.at(portfolio_id_);
 }
 
 void Portfolio::evaluate(bool on_close)
@@ -680,17 +679,23 @@ void Portfolio::evaluate(bool on_close)
         auto position = it->second;
 
         // get the exchange the asset is listed on
-        auto exchange_id = position->get_exchange_id();
-        auto market_price = this->exchange_map->get_market_price(it->first);
+        auto asset = this->exchange_map->get_asset(it->first).value();
+        auto market_price = asset->get_market_price(on_close);
 
         // asset is not in market view
         if (market_price == 0)
         {
             continue;
         }
+        
+        // if we are tracking portfolio beta adjust the pointer according to the position
+        if(this->beta.has_value())
+        {
+            auto beta_dollars = asset->get_beta() * position->get_units() * market_price;
+            *this->beta.value() += beta_dollars;
+        }
 
         auto trades = position->get_trades();
-        //evaluate indivual trades, adjusting source portfolios as we go
         for(auto& trade_pair : trades){
             auto trade = trade_pair.second;
 

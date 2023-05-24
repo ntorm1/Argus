@@ -4,7 +4,6 @@
 #include "asset.h"
 #include "portfolio.h"
 
-
 void Portfolio::add_tracer(PortfolioTracerType tracer_type)
 {
     this->portfolio_history->add_tracer(tracer_type);
@@ -34,13 +33,24 @@ void PortfolioHistory::add_tracer(PortfolioTracerType tracer_type)
     switch (tracer_type) 
     {
         case PortfolioTracerType::Value:
+        {
             this->tracers.push_back(std::make_shared<ValueTracer>(this->parent_portfolio));
             break;
+        }
         case PortfolioTracerType::Event:
+        {
             auto event_tracer = std::make_shared<EventTracer>(this->parent_portfolio);
             this->parent_portfolio->set_event_tracer(event_tracer);
             this->tracers.push_back(event_tracer);
             break;
+        }
+        case PortfolioTracerType::PortfolioBeta:
+        {
+            auto tracer = std::make_shared<PortfolioBetaTracer>(this->parent_portfolio);
+            this->parent_portfolio->set_beta(&tracer->beta);
+            this->tracers.push_back(tracer);
+            break;
+        }
     }
 }
 

@@ -262,7 +262,7 @@ shared_ptr<Exchange> Hydra::new_exchange(const string &exchange_id)
         printf("new exchange %s: exchange is built at: %p\n", exchange_id.c_str(), exchange.get());
     #endif
 
-    // return the shared pointer to calling function, lifetime of exchange is now linked to they hydra class
+    // return the shared pointer to calling function, lifetime of exchange is now linked to the hydra class
     return exchange;
 }
 
@@ -298,16 +298,16 @@ shared_ptr<Broker> Hydra::new_broker(const std::string &broker_id, double cash)
     return broker;
 }
 
-shared_ptr<Exchange> Hydra::get_exchange(const std::string &exchange_id)
+shared_ptr<Exchange> Hydra::get_exchange(const std::string &exchange_id_)
 {
-    try
+    auto exchange = this->exchange_map->get_exchange(exchange_id_);
+    if(exchange.has_value())
     {
-        return this->exchange_map->exchanges.at(exchange_id);
+        return exchange.value();
     }
-    catch (const std::out_of_range &e)
+    else
     {
-        // Catch the exception and re-raise it as a Python KeyError
-        throw py::key_error(e.what());
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidId);
     }
 }
 
