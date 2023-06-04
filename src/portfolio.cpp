@@ -662,6 +662,23 @@ void Portfolio::update(long long datetime){
     }
 }
 
+double Portfolio::calculate_beta(bool on_close)
+{
+    if(!this->beta.has_value())
+    {
+        ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
+    }
+    double beta_dollars = 0.0f;
+    for(auto& position_pair : this->positions_map)
+    {
+        auto position = position_pair.second;
+        auto asset = this->exchange_map->get_asset(position->get_asset_id()).value();
+        auto market_price = asset->get_market_price(on_close);
+        beta_dollars += asset->get_beta() * position->get_units() * market_price;
+    }
+    return beta_dollars;
+}
+
 void Portfolio::evaluate(bool on_close)
 {
     #ifdef ARGUS_RUNTIME_ASSERT
@@ -677,8 +694,6 @@ void Portfolio::evaluate(bool on_close)
     for(auto it = this->positions_map.begin(); it != positions_map.end(); ++it) 
     {
         auto position = it->second;
-
-        // get the exchange the asset is listed on
         auto asset = this->exchange_map->get_asset(it->first).value();
         auto market_price = asset->get_market_price(on_close);
 
@@ -688,15 +703,7 @@ void Portfolio::evaluate(bool on_close)
             continue;
         }
         
-        // if we are tracking portfolio beta adjust the pointer according to the position
-        if(this->beta.has_value())
-        {
-            auto beta_dollars = asset->get_beta() * position->get_units() * market_price;
-            *this->beta.value() += beta_dollars;
-        }
-
-        auto trades = position->get_trades();
-        for(auto& trade_pair : trades){
+        for(auto& trade_pair : position->get_trades()){
             auto trade = trade_pair.second;
 
             //update source portfolio values nlv and unrealized pl

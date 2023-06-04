@@ -258,6 +258,14 @@ public:
     void set_beta(double* beta_){this->beta = (beta_ == nullptr) ? nullopt : optional<double*>(beta_);}
 
     /**
+     * @brief calculate the net beta dollars of the portfolio
+     * 
+     * @param on_close get market prices on close
+     * @return double net beta dollars of the portfolio
+     */
+    double calculate_beta(bool on_close = true);
+
+    /**
      * @brief generate a consolidated order history for all child portfolios this will
      *        search through child portfolios and look for event tracers and copy the orders
      *        into the new vector 
@@ -419,9 +427,9 @@ public:
     }
 
     void step(long long datetime) override
-    {
+    {   
+        this->beta = this->parent_portfolio->calculate_beta(true);
         this->beta_history.push_back(this->beta);
-        this->beta = 0;
     };
 };
 
@@ -512,9 +520,9 @@ public:
         this->positions.clear();
     }
 
-    vector<shared_ptr<Order>>& get_order_history(){return this->orders;};
-    vector<shared_ptr<Trade>>& get_trade_history(){return this->trades;};
-    vector<shared_ptr<Position>>& get_position_history(){return this->positions;};
+    vector<shared_ptr<Order>> const    & get_order_history(){return this->orders;};
+    vector<shared_ptr<Trade>> const    & get_trade_history(){return this->trades;};
+    vector<shared_ptr<Position>> const & get_position_history(){return this->positions;};
 
 private:
     /// history of all orders

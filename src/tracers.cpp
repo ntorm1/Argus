@@ -23,11 +23,10 @@ shared_ptr<PortfolioTracer> Portfolio::get_tracer(PortfolioTracerType tracer_typ
 void PortfolioHistory::add_tracer(PortfolioTracerType tracer_type)
 {
     // test to see if tracer exists
-
     auto tracer = this->get_tracer(tracer_type);
     if(tracer)
     {
-        throw std::runtime_error("tracer already exists");
+       ARGUS_RUNTIME_ERROR(ArgusErrorCode::InvalidTracerType);
     }
 
     switch (tracer_type) 
